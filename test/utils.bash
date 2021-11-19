@@ -2,6 +2,10 @@
 
 function set_env {
     while ! [ -e Makefile ]; do
+        if [ "$(pwd)" = '/' ]; then
+            echo >&2 "ERROR: no Makefile found in the directory hierarchy"
+            return 1
+        fi
         cd ..
     done
 
@@ -26,25 +30,33 @@ function docker_cleanup {
     unset HBASE_CONF_hbase_regionserver_info_port
 }
 
-function hbase_extract (
+function hbase_extract {
     set_env
     mkdir -p ./var/hbase/
-    cd ./var/hbase/
-    export GID="$(id -g)"
+    (
+        cd ./var/hbase/
+        export GID="$(id -g)"
 
-    echo '$ docker' run --rm -i -v "'${PWD}:/app'" -w /app "'${IMAGE_NAME}'" /bin/bash '<<'
+        echo '$ docker' run --rm -i -v "'${PWD}:/app'" -w /app "'${IMAGE_NAME}'" /bin/bash '<<'
 
-    docker run --rm -i -v "${PWD}:/app" -w /app "${IMAGE_NAME}" /bin/bash <<eof
-        cp -r /opt/hbase-current/* /app
-        chown ${UID}:${GID} -R /app
-eof
-)
+        docker run --rm -i -v "${PWD}:/app" -w /app "${IMAGE_NAME}" /bin/bash <<<"
+            cp -r /opt/hbase-current/* /app
+            chown ${UID}:${GID} -R /app
+        "
+    )
+}
 
-function hbase_shell (
-    export JAVA_HOME="${JAVA_HOME:-/usr}"
-    ./var/hbase/bin/hbase shell -n <<<"$@" 2>&1 \
-        # | sed -e '/^WARNING:/d' -e '/^INFO:/d' -e '/^OpenJDK 64-Bit/d' -e '/^unsupported Java/d' -e '/util.NativeCodeLoader:/d'
-)
+function hbase_shell {
+    (
+        export JAVA_HOME="${JAVA_HOME:-/usr}"
+        ./var/hbase/bin/hbase shell -n <<<"$@" 2>&1 | sed \
+            -e '/^WARNING:/d' \
+            -e '/^INFO:/d' \
+            -e '/^OpenJDK 64-Bit/d' \
+            -e '/^unsupported Java/d' \
+            -e '/util.NativeCodeLoader:/d'
+    )
+}
 
 function hbase_scan {
     table="$1"
@@ -73,8 +85,25 @@ function do_retry {
     done
 }
 
+function find_in_hierarchy {
+    path="${1:-}"
+
+    (
+        while ! [ -e "${path}" ]; do
+            if [ "$(pwd)" = '/' ]; then
+                echo >&2 "ERROR: script not found in the hierarchy"
+                return 1
+            fi
+            cd ..
+        done
+
+        realpath "${path}"
+    )
+}
+
 if [ -z "${BATS_RUN_TMPDIR:-}" ]; then
     # Execute the named function if this file is called directly
+    set -euo pipefail
     cd "$(dirname "$(realpath "$0")")"
-    "$1"
+    "$@"
 fi
