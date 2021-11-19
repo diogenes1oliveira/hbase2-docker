@@ -77,8 +77,8 @@ The [entrypoint](docker-entrypoint.sh) script maps environment variables with th
 ```xml
 <!-- HBASE_CONF_some_config=value -->
 <property>
-<name>some.config</name>
-<value>value</value>
+    <name>some.config</name>
+    <value>value</value>
 </property>
 ```
 
