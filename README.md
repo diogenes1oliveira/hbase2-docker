@@ -37,7 +37,7 @@ $ docker run -it --rm \
     diogenes1oliveira/hbase2-docker:1.0.0-hbase2.0.2
 ```
 
-Or you can use the convenience Makefile to start and follow the logs:
+Or you can use the convenience Makefile to start and stop it:
 
 ```shell
 $ make run
@@ -144,7 +144,21 @@ Of course, you can also directly run `docker build` and `docker push`, but then 
 have to set the build arguments directly. Check the aforementioned [Makefile](Makefile)
 for more details.
 
-### Building
+### Linting and Testing
+
+To run [hadolint](https://github.com/hadolint/hadolint) against the Dockerfile:
+
+```shell
+$ make lint
+```
+
+To run the [bats](https://github.com/bats-core/bats-core) tests:
+
+```
+$ make test
+```
+
+### Building and Pushing
 
 Use the phony target `build` in the [Makefile](Makefile) to build the Docker
 image:
@@ -153,17 +167,7 @@ image:
 $ make build VCS_REF=some-git-tag
 ```
 
-### Linting
-
-To run [hadolint](https://github.com/hadolint/hadolint) against the Dockerfile:
-
-```shell
-$ make lint
-```
-
-### Pushing
-
-To push:
+To push to the Docker registry:
 
 ```shell
 $ make push VCS_REF=some-git-tag

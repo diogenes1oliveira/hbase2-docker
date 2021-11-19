@@ -44,6 +44,12 @@ print-image-name:
 lint:
 	$(DOCKER) run --rm -i hadolint/hadolint < ./Dockerfile
 
+# $ make test
+# Runs the Bats tests
+.PHONY: test
+test:
+	@./test/bats/bin/bats --tap test/
+
 # $ make push
 # Pushes the built image to the repository
 .PHONY: push
@@ -54,8 +60,7 @@ HBASE_CONF_ENVS := $(shell awk 'BEGIN{for(v in ENVIRON) print v}' | grep HBASE_C
 HBASE_CONF_FLAGS := $(foreach env, $(HBASE_CONF_ENVS), -e $(env) )
 
 # $ make run
-# Starts a single container with HBase standalone, tailing
-# its initialization logs afterwards
+# Starts a single container with HBase standalone
 .PHONY: run
 run:
 	@export zookeeper_port=$${HBASE_CONF_hbase_zookeeper_property_clientPort:-2181} && \
@@ -63,14 +68,20 @@ run:
 	export master_ui_port=$${HBASE_CONF_hbase_master_info_port:-16010} && \
 	export region_port=$${HBASE_CONF_hbase_regionserver_port:-16020} && \
 	export region_ui_port=$${HBASE_CONF_hbase_regionserver_info_port:-16030} && \
-	$(DOCKER) run -d --rm $(HBASE_CONF_FLAGS) --name $(CONTAINER_NAME) $(DOCKER_RUN_OPTS) \
+	echo '$$' $(DOCKER) run -d --rm $(HBASE_CONF_FLAGS) --name $(CONTAINER_NAME) $(DOCKER_RUN_OPTS) \
 		-p $${zookeeper_port}:$${zookeeper_port} \
 		-p $${master_port}:$${master_port} \
 		-p $${master_ui_port}:$${master_ui_port} \
 		-p $${region_port}:$${region_port} \
 		-p $${region_ui_port}:$${region_ui_port} \
 		$(IMAGE_NAME) && \
-	$(DOCKER) logs -f $(CONTAINER_NAME)
+	$(DOCKER) run -d --rm $(HBASE_CONF_FLAGS) --name $(CONTAINER_NAME) $(DOCKER_RUN_OPTS) \
+		-p $${zookeeper_port}:$${zookeeper_port} \
+		-p $${master_port}:$${master_port} \
+		-p $${master_ui_port}:$${master_ui_port} \
+		-p $${region_port}:$${region_port} \
+		-p $${region_ui_port}:$${region_ui_port} \
+		$(IMAGE_NAME)
 
 # $ make rm
 # Terminates and removes the container started by $ make run
