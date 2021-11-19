@@ -2,3 +2,4 @@
 .env
 .envrc
 .autoenv.zsh
+var/

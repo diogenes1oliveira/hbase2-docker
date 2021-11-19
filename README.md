@@ -20,6 +20,8 @@ method easier:
 - The ports are configurable and properly limited;
 - Running within Docker will assure proper isolation and cleanup of logs and other
   temporary files;
+- We can set HBase configuration with `$HBASE_CONF_*` environment variables instead of
+  having to fiddle around with XMLs.
 
 This stack is mostly based on the repository https://github.com/big-data-europe/docker-hbase.
 
@@ -66,6 +68,64 @@ In most Linuxes any `.localhost` host resolves to `127.0.0.1`, so if this is not
 you'll have to update the `/etc/hosts` manually.
 
 To get more details about the cluster mode, check https://hbase.apache.org/book.html#fully_dist.
+
+### Configuration
+
+The [entrypoint](docker-entrypoint.sh) script maps environment variables with the prefix
+`HBASE_CONF_` by removing the prefix and replacing dots by underscores:
+
+```xml
+<!-- HBASE_CONF_some_config=value -->
+<property>
+<name>some.config</name>
+<value>value</value>
+</property>
+```
+
+The default configuration set in the [Dockerfile](Dockerfile) is as such:
+
+| Name                                     | Default value     |
+| ---------------------------------------- | ----------------- |
+| `hbase.rootdir`                          | `/data/hbase`     |
+| `hbase.unsafe.stream.capability.enforce` | `false`           |
+| `hbase.cluster.distributed`              | `false`           |
+| `hbase.zookeeper.property.dataDir`       | `/data/zookeeper` |
+| `hbase.zookeeper.peerport`               | `2888`            |
+| `hbase.zookeeper.leaderport`             | `3888`            |
+| `hbase.zookeeper.property.clientPort`    | `2181`            |
+| `hbase.master.ipc.address`               | `0.0.0.0`         |
+| `hbase.regionserver.ipc.address`         | `0.0.0.0`         |
+| `hbase.master.hostname`                  | `localhost`       |
+| `hbase.master.port`                      | `16000`           |
+| `hbase.master.info.port`                 | `16010`           |
+| `hbase.regionserver.hostname`            | `localhost`       |
+| `hbase.regionserver.port`                | `16020`           |
+| `hbase.regionserver.info.port`           | `160`             |
+
+Additionally, the following configs are built by the [entrypoint](docker-entrypoint.sh):
+
+| Name                     | Default value                                                     |
+| ------------------------ | ----------------------------------------------------------------- |
+| `hbase.master`           | `${hbase.master.hostname}:${hbase.master.port}`                   |
+| `hbase.zookeeper.quorum` | `${hbase.master.hostname}:${hbase.zookeeper.property.clientPort}` |
+
+### Configuring binding ports
+
+Configurations of ports are specially sensitive to HBase. If you're going to change
+them, be sure to:
+
+- You have to bind the same ports both inside and outside Docker itself in `-p PORT:PORT`;
+- Set the same port in the environment variable `$HBASE_CONF_..._port`.
+
+### Configuring hostnames
+
+Configurations of hostnames are specially sensitive to HBase and the containers need to be
+accessible both inside and outside Docker with the same hostname. By default the container
+binds them all to `localhost`, so if you're going to change any of them, be sure to:
+
+- The new hostname maps locally to `127.0.0.1` via `/etc/hosts` or `resolv.conf`;
+- The same hostname is accessible inside the container via `--add-host HOSTNAME:127.0.0.1`;
+- Set the same hostname in the environment variable `$HBASE_CONF_..._port`.
 
 ## Development
 
