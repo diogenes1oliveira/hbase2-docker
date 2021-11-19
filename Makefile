@@ -17,6 +17,9 @@ export BUILD_VERSION ?= $(VCS_REF)-hbase$(HBASE_VERSION)
 IMAGE_BASENAME ?= diogenes1oliveira/hbase2-docker
 # Image complete tag name
 IMAGE_NAME := $(IMAGE_BASENAME):$(BUILD_VERSION)
+# Repo base URL and description
+REPO_HOME ?= $(shell ./.dev/extract-dockerfile-label.sh org.opencontainers.image.url < ./Dockerfile )
+REPO_DESCRIPTION ?= $(shell ./.dev/extract-dockerfile-label.sh org.opencontainers.image.description < ./Dockerfile )
 
 # Name of the standalone container
 CONTAINER_NAME ?= hbase2-docker
@@ -48,13 +51,19 @@ lint:
 # Runs the Bats tests
 .PHONY: test
 test:
-	@./test/bats/bin/bats --tap test/
+	@./test/bats/bin/bats test/
 
 # $ make push
 # Pushes the built image to the repository
 .PHONY: push
 push:
 	$(DOCKER) push $(IMAGE_NAME)
+
+.PHONY: push-readme
+push-readme:
+	@mkdir -p ./var
+	@.dev/rebase-markdown-links.sh "$(REPO_HOME)" -i README.md -o ./var/README.docker.md
+	@$(DOCKER) pushrm "$(IMAGE_BASENAME)" --file ./var/README.docker.md --short "$(REPO_DESCRIPTION)"
 
 HBASE_CONF_ENVS := $(shell awk 'BEGIN{for(v in ENVIRON) print v}' | grep HBASE_CONF_ | sed '/^$$/d')
 HBASE_CONF_FLAGS := $(foreach env, $(HBASE_CONF_ENVS), -e $(env) )

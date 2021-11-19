@@ -51,7 +51,7 @@ To get more details about the standalone mode, check https://hbase.apache.org/bo
 
 ### Cluster Mode
 
-You can run a full Hadoop and HBase cluster using the included [docker-compose.yml](docker-compose.yml).
+You can run a full Hadoop and HBase cluster using the included [docker-compose.yml](./docker-compose.yml).
 
 ```shell
 $ make cluster/up
@@ -71,7 +71,7 @@ To get more details about the cluster mode, check https://hbase.apache.org/book.
 
 ### Configuration
 
-The [entrypoint](docker-entrypoint.sh) script maps environment variables with the prefix
+The [entrypoint](./docker-entrypoint.sh) script maps environment variables with the prefix
 `HBASE_CONF_` by removing the prefix and replacing dots by underscores:
 
 ```xml
@@ -82,7 +82,7 @@ The [entrypoint](docker-entrypoint.sh) script maps environment variables with th
 </property>
 ```
 
-The default configuration set in the [Dockerfile](Dockerfile) is as such:
+The default configuration set in the [Dockerfile](./Dockerfile) is as such:
 
 | Name                                     | Default value     |
 | ---------------------------------------- | ----------------- |
@@ -102,7 +102,7 @@ The default configuration set in the [Dockerfile](Dockerfile) is as such:
 | `hbase.regionserver.port`                | `16020`           |
 | `hbase.regionserver.info.port`           | `160`             |
 
-Additionally, the following configs are built by the [entrypoint](docker-entrypoint.sh):
+Additionally, the following configs are built by the [entrypoint](./docker-entrypoint.sh):
 
 | Name                     | Default value                                                     |
 | ------------------------ | ----------------------------------------------------------------- |
@@ -132,16 +132,18 @@ binds them all to `localhost`, so if you're going to change any of them, be sure
 The following build variables are available. Be sure to set them consistently when
 executing multiple `make` commands:
 
-| Variable         | Default                            | Description                  |
-| ---------------- | ---------------------------------- | ---------------------------- |
-| `IMAGE_BASENAME` | `diogenes1oliveira/hbase2-docker`  | Image basename               |
-| `HBASE_VERSION`  | `2.0.2`                            | HBase version                |
-| `VCS_REF`        | `1.0.0`                            | Git tag, commit ID or branch |
-| `BUILD_VERSION`  | `${VCS_REF}-hbase${HBASE_VERSION}` | Image tag                    |
-| `BUILD_DATE`     | `1970-01-01T00:00:00Z`             | Current UTC timestamp        |
+| Variable           | Default                              | Description                  |
+| ------------------ | ------------------------------------ | ---------------------------- |
+| `IMAGE_BASENAME`   | `diogenes1oliveira/hbase2-docker`    | Image basename               |
+| `HBASE_VERSION`    | `2.0.2`                              | HBase version                |
+| `VCS_REF`          | `1.0.0`                              | Git tag, commit ID or branch |
+| `BUILD_VERSION`    | `${VCS_REF}-hbase${HBASE_VERSION}`   | Image tag                    |
+| `BUILD_DATE`       | `1970-01-01T00:00:00Z`               | Current UTC timestamp        |
+| `REPO_HOME`        | Extracted from the Dockerfile labels | Repository HTTP(S) URL       |
+| `REPO_DESCRIPTION` | Extracted from the Dockerfile labels | Repository description       |
 
 Of course, you can also directly run `docker build` and `docker push`, but then you'll
-have to set the build arguments directly. Check the aforementioned [Makefile](Makefile)
+have to set the build arguments directly. Check the aforementioned [Makefile](./Makefile)
 for more details.
 
 ### Linting and Testing
@@ -160,7 +162,7 @@ $ make test
 
 ### Building and Pushing
 
-Use the phony target `build` in the [Makefile](Makefile) to build the Docker
+Use the phony target `build` in the [Makefile](./Makefile) to build the Docker
 image:
 
 ```shell
@@ -171,4 +173,10 @@ To push to the Docker registry:
 
 ```shell
 $ make push VCS_REF=some-git-tag
+```
+
+To update the description in the Docker Hub:
+
+```
+
 ```
