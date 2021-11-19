@@ -1,0 +1,4 @@
+.vscode/
+.env
+.envrc
+.autoenv.zsh
