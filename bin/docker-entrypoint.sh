@@ -10,14 +10,18 @@ if [[ "${zookeeper_quorum}" =~ .+:.+ && -z "${HBASE_CONF_hbase_zookeeper_quorum:
     export HBASE_CONF_hbase_zookeeper_quorum="${zookeeper_quorum}"
 fi
 
-function addProperty() {
-  local path=$1
-  local name=$2
-  local value=$3
+function info() {
+    echo >&2 "INFO: $@"
+}
 
-  local entry="<property><name>$name</name><value>${value}</value></property>"
-  local escapedEntry=$(echo $entry | sed 's/\//\\\//g')
-  sed -i "/<\/configuration>/ s/.*/${escapedEntry}\n&/" $path
+function addProperty() {
+    local path=$1
+    local name=$2
+    local value=$3
+
+    local entry="<property><name>$name</name><value>${value}</value></property>"
+    local escapedEntry=$(echo $entry | sed 's/\//\\\//g')
+    sed -i "/<\/configuration>/ s/.*/${escapedEntry}\n&/" $path
 }
 
 function configure() {
@@ -28,12 +32,12 @@ function configure() {
     local var
     local value
 
-    echo "Configuring $module"
+    info "Configuring $module"
     for c in `printenv | perl -sne 'print "$1 " if m/^${envPrefix}_(.+?)=.*/' -- -envPrefix=$envPrefix`; do
         name=`echo ${c} | perl -pe 's/___/-/g; s/__/_/g; s/_/./g'`
         var="${envPrefix}_${c}"
         value=${!var}
-        echo " - Setting $name=$value"
+        info "  Setting $name=$value"
         addProperty /etc/hbase/$module-site.xml $name "$value"
     done
 }
@@ -53,21 +57,21 @@ function wait_for_it()
     result=$?
 
     until [ $result -eq 0 ]; do
-      echo "[$i/$max_try] check for ${service}:${port}..."
-      echo "[$i/$max_try] ${service}:${port} is not available yet"
-      if (( $i == $max_try )); then
-        echo "[$i/$max_try] ${service}:${port} is still not available; giving up after ${max_try} tries. :/"
-        exit 1
-      fi
+        info "[$i/$max_try] check for ${service}:${port}..."
+        info "[$i/$max_try] ${service}:${port} is not available yet"
+        if (( $i == $max_try )); then
+            info "[$i/$max_try] ${service}:${port} is still not available; giving up after ${max_try} tries. :/"
+            exit 1
+        fi
 
-      echo "[$i/$max_try] try in ${retry_seconds}s once again ..."
-      let "i++"
-      sleep $retry_seconds
+        info "[$i/$max_try] try in ${retry_seconds}s once again ..."
+        let "i++"
+        sleep $retry_seconds
 
-      nc -z $service $port
-      result=$?
+        nc -z $service $port
+        result=$?
     done
-    echo "[$i/$max_try] $service:${port} is available."
+    info "[$i/$max_try] $service:${port} is available."
 }
 
 for i in "${SERVICE_PRECONDITION[@]}"
