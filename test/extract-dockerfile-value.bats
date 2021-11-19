@@ -4,18 +4,18 @@ setup() {
     load 'test_helper/bats-support/load'
     load 'test_helper/bats-assert/load'
 
-    SCRIPT="$(find_in_hierarchy .dev/extract-dockerfile-label.sh)"
+    SCRIPT="$(find_in_hierarchy .dev/extract-dockerfile-value.sh)"
 }
 
 @test "works unquoted" {
-    run "${SCRIPT}" maintainer <<<'LABEL maintainer=myself'
+    run "${SCRIPT}" ENV=person <<<'ENV person=myself'
 
     assert_success
     assert_output "myself"
 }
 
 @test "works quoted" {
-    run "${SCRIPT}" maintainer <<<'
+    run "${SCRIPT}" LABEL=maintainer <<<'
     LABEL foo=bar \
         maintainer="someone else"'
 
@@ -24,7 +24,7 @@ setup() {
 }
 
 @test "fails when not found" {
-    run "${SCRIPT}" maintainer <<<'LABEL foo=bar'
+    run "${SCRIPT}" LABEL=maintainer <<<'LABEL foo=bar'
 
     assert_failure
 }

@@ -18,8 +18,8 @@ IMAGE_BASENAME ?= diogenes1oliveira/hbase2-docker
 # Image complete tag name
 IMAGE_NAME := $(IMAGE_BASENAME):$(BUILD_VERSION)
 # Repo base URL and description
-REPO_HOME ?= $(shell ./.dev/extract-dockerfile-label.sh org.opencontainers.image.url < ./Dockerfile )
-REPO_DESCRIPTION ?= $(shell ./.dev/extract-dockerfile-label.sh org.opencontainers.image.description < ./Dockerfile )
+REPO_HOME ?= $(shell ./.dev/extract-dockerfile-value.sh LABEL=org.opencontainers.image.url < ./Dockerfile )
+REPO_DESCRIPTION ?= $(shell ./.dev/extract-dockerfile-value.sh LABEL=org.opencontainers.image.description < ./Dockerfile )
 
 # Name of the standalone container
 CONTAINER_NAME ?= hbase2-docker
@@ -59,6 +59,8 @@ test:
 push:
 	$(DOCKER) push $(IMAGE_NAME)
 
+# $ make push-readme
+# Updates the Docker Hub description
 .PHONY: push-readme
 push-readme:
 	@mkdir -p ./var

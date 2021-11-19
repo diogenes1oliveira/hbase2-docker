@@ -4,17 +4,18 @@ NAME="$0"
 
 usage() {
     cat <<eof
-Extracts the value of a LABEL declared in a Dockerfile
+Extracts the value of a LABEL or ENV declared in a Dockerfile
 
 Obs: this will NOT handle weird cases, such as when there is a escape inside
 the label value, the label name occurs inside another label value, etc...
 
 Usage:
-    ${NAME} <LABEL>
+    ${NAME} LABEL=<NAME> | ENV=<NAME>
 eof
 }
 
-LABEL=
+TYPE=
+NAME=
 
 main() {
     # Merge escaped continuation lines, remove trailing spaces and get
@@ -22,20 +23,20 @@ main() {
     readarray -t lines < <(
         sed -z 's/\\\n/ /g' | \
         sed -E 's/^\s+//g' | \
-        grep '^LABEL' | \
+        grep "^${TYPE}" | \
         sed 's/$/ /g'
     )
 
-    pattern="${LABEL}=([^\\s\"]*|\"[^\"]*\") "
+    pattern="${NAME}=([^\\s\"]*|\"[^\"]*\") "
 
     for line in "${lines[@]+"${lines[@]}"}"; do
         if declaration="$( match_pattern "${pattern}" <<<"${line}" )"; then
-            sed -e "s/^${LABEL}=//g" -e 's/ $//g' <<<"${declaration}"
+            sed -e "s/^${NAME}=//g" -e 's/ $//g' <<<"${declaration}"
             return 0
         fi
     done
 
-    echo >&2 "ERROR: label not found in the Dockerfile"
+    echo >&2 "ERROR: value not found in the Dockerfile"
     return 1
 }
 
@@ -47,9 +48,10 @@ match_pattern() {
 if [[ "${1:-}" =~ ^-h|--help$ ]]; then
     usage
 else
-    LABEL="${1:-}"
-    if [ -z "${LABEL}" ]; then
-        echo >&2 "ERROR: no label was specified"
+    TYPE="$(sed 's/=.*//' <<<"${1:-}")"
+    if ! [[ "${TYPE}" =~ ^LABEL|ENV$ ]]; then
+        echo >&2 "ERROR: bad spec"
     fi
-    main "${LABEL}"
+    NAME="$(sed "s/^${TYPE}=//" <<<"${1:-}")"
+    main
 fi
