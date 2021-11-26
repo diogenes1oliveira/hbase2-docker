@@ -82,25 +82,27 @@ The [entrypoint](./bin/docker-entrypoint.sh) script maps environment variables w
 </property>
 ```
 
-The default configuration set in the [Dockerfile](./Dockerfile) is as such:
+The default configuration set [hbase-config-build.sh](./bin/hbase-config-build.sh) is as such:
 
-| Name                                     | Default value     |
-| ---------------------------------------- | ----------------- |
-| `hbase.rootdir`                          | `/data/hbase`     |
-| `hbase.unsafe.stream.capability.enforce` | `false`           |
-| `hbase.cluster.distributed`              | `false`           |
-| `hbase.zookeeper.property.dataDir`       | `/data/zookeeper` |
-| `hbase.zookeeper.peerport`               | `2888`            |
-| `hbase.zookeeper.leaderport`             | `3888`            |
-| `hbase.zookeeper.property.clientPort`    | `2181`            |
-| `hbase.master.ipc.address`               | `0.0.0.0`         |
-| `hbase.regionserver.ipc.address`         | `0.0.0.0`         |
-| `hbase.master.hostname`                  | `localhost`       |
-| `hbase.master.port`                      | `16000`           |
-| `hbase.master.info.port`                 | `16010`           |
-| `hbase.regionserver.hostname`            | `localhost`       |
-| `hbase.regionserver.port`                | `16020`           |
-| `hbase.regionserver.info.port`           | `160`             |
+| Name                                     | Default value                             | Role |
+| ---------------------------------------- | ----------------------------------------- | ---- |
+| `$HBASE_ROLE`                            | `standalone`                              |      |
+| `$HBASE_MANAGES_ZK`                      | `true` if standalone, else `false`        |      |
+| `hbase.rootdir`                          | `/data/hbase`                             | all  |
+| `hbase.unsafe.stream.capability.enforce` | `false` if standalone, else `true`        |      |
+| `hbase.cluster.distributed`              | `false` if standalone, else `true`        |      |
+| `hbase.zookeeper.property.dataDir`       | `/data/zookeeper` if standalone           |      |
+| `hbase.zookeeper.peerport`               | `2888`                                    |      |
+| `hbase.zookeeper.leaderport`             | `3888`                                    |      |
+| `hbase.zookeeper.property.clientPort`    | `2181`                                    |      |
+| `hbase.master.ipc.address`               | `0.0.0.0`                                 |      |
+| `hbase.regionserver.ipc.address`         | `0.0.0.0` if regionserver or standalone   |      |
+| `hbase.master.hostname`                  | `localhost`                               |      |
+| `hbase.master.port`                      | `16000`                                   |      |
+| `hbase.master.info.port`                 | `16010`                                   |      |
+| `hbase.regionserver.hostname`            | `localhost` if regionserver or standalone |      |
+| `hbase.regionserver.port`                | `16020` if regionserver or standalone     |      |
+| `hbase.regionserver.info.port`           | `160030` if regionserver or standalone    |      |
 
 Additionally, the following configs are built by the [entrypoint](./docker-entrypoint.sh):
 
