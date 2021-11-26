@@ -21,7 +21,7 @@ RUN apt-get update && \
         netcat=1.10-46 && \
     rm -rf /var/lib/apt/lists
 
-ARG HBASE_VERSION=2.0.2
+ARG HBASE_VERSION
 ARG HBASE_URL="https://archive.apache.org/dist/hbase/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz"
 RUN set -x && \
     curl -fSL "${HBASE_URL}" -o /tmp/hbase.tar.gz && \
@@ -33,8 +33,8 @@ RUN set -x && \
     mkdir /opt/hbase-${HBASE_VERSION}/logs && \
     mkdir /hadoop-data
 
-ENV HBASE_PREFIX=/opt/hbase-current \
-    HBASE_CONF_DIR=/etc/hbase \
+ENV HBASE_PREFIX=/opt/hbase-current
+ENV HBASE_CONF_DIR=/etc/hbase \
     PATH="${HBASE_PREFIX}/bin/:${PATH}" \
     USER=root
 

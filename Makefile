@@ -1,9 +1,7 @@
 # This Makefile is a convenience to aggregate the build commands
 # Each phony target corresponds to a build command
 
-DOCKER_COMPOSE ?= docker-compose
-DOCKER ?= docker
-
+# Quasi-mandatory args. When building locally
 # HBase version
 export HBASE_VERSION ?= 2.0.2
 # Current UTC timestamp
@@ -14,15 +12,19 @@ export VCS_REF ?= 1.0.0
 export BUILD_VERSION ?= $(VCS_REF)-hbase$(HBASE_VERSION)
 
 # Image basename
-IMAGE_BASENAME ?= diogenes1oliveira/hbase2-docker
+IMAGE_BASENAME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.title < ./Dockerfile )
 # Image complete tag name
 IMAGE_NAME := $(IMAGE_BASENAME):$(BUILD_VERSION)
 # Repo base URL and description
-REPO_HOME ?= $(shell ./.dev/extract-dockerfile-value.sh LABEL=org.opencontainers.image.url < ./Dockerfile )
-REPO_DESCRIPTION ?= $(shell ./.dev/extract-dockerfile-value.sh LABEL=org.opencontainers.image.description < ./Dockerfile )
+REPO_HOME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.url < ./Dockerfile )
+REPO_DESCRIPTION ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.description < ./Dockerfile )
 
 # Name of the standalone container
-CONTAINER_NAME ?= hbase2-docker
+
+export DOCKER ?= docker
+export DOCKER_COMPOSE ?= docker-compose
+export CONTAINER_NAME ?= hbase2-docker
+export HBASE_PREFIX ?= ./var/hbase
 
 # $ make build
 # Builds the Docker image
@@ -51,7 +53,8 @@ lint:
 # Runs the Bats tests
 .PHONY: test
 test:
-	@./test/bats/bin/bats test/
+	@./test/bats/bin/bats test/.dev
+	@./test/bats/bin/bats test/bin
 
 # $ make push
 # Pushes the built image to the repository
@@ -64,41 +67,40 @@ push:
 .PHONY: push-readme
 push-readme:
 	@mkdir -p ./var
-	@.dev/rebase-markdown-links.sh "$(REPO_HOME)" -i README.md -o ./var/README.docker.md
+	@.dev/markdown-rebase.sh "$(REPO_HOME)" -i README.md -o ./var/README.docker.md
 	@$(DOCKER) pushrm "$(IMAGE_BASENAME)" --file ./var/README.docker.md --short "$(REPO_DESCRIPTION)"
 
-HBASE_CONF_ENVS := $(shell awk 'BEGIN{for(v in ENVIRON) print v}' | grep HBASE_CONF_ | sed '/^$$/d')
-HBASE_CONF_FLAGS := $(foreach env, $(HBASE_CONF_ENVS), -e $(env) )
-
-# $ make run
+# $ make start
 # Starts a single container with HBase standalone
-.PHONY: run
-run:
-	@export zookeeper_port=$${HBASE_CONF_hbase_zookeeper_property_clientPort:-2181} && \
-	export master_port=$${HBASE_CONF_hbase_master_port:-16000} && \
-	export master_ui_port=$${HBASE_CONF_hbase_master_info_port:-16010} && \
-	export region_port=$${HBASE_CONF_hbase_regionserver_port:-16020} && \
-	export region_ui_port=$${HBASE_CONF_hbase_regionserver_info_port:-16030} && \
-	echo '$$' $(DOCKER) run -d --rm $(HBASE_CONF_FLAGS) --name $(CONTAINER_NAME) $(DOCKER_RUN_OPTS) \
-		-p $${zookeeper_port}:$${zookeeper_port} \
-		-p $${master_port}:$${master_port} \
-		-p $${master_ui_port}:$${master_ui_port} \
-		-p $${region_port}:$${region_port} \
-		-p $${region_ui_port}:$${region_ui_port} \
-		$(IMAGE_NAME) && \
-	$(DOCKER) run -d --rm $(HBASE_CONF_FLAGS) --name $(CONTAINER_NAME) $(DOCKER_RUN_OPTS) \
-		-p $${zookeeper_port}:$${zookeeper_port} \
-		-p $${master_port}:$${master_port} \
-		-p $${master_ui_port}:$${master_ui_port} \
-		-p $${region_port}:$${region_port} \
-		-p $${region_ui_port}:$${region_ui_port} \
-		$(IMAGE_NAME)
+.PHONY: start
+start:
+	@./.dev/hbase-start.sh
 
-# $ make rm
-# Terminates and removes the container started by $ make run
-.PHONY: rm
-rm:
-	@$(DOCKER) rm -f $(CONTAINER_NAME)
+# $ make stop
+# Stop and removes the container started by $ make run
+.PHONY: stop
+stop:
+	@./.dev/hbase-stop.sh
+
+# $ make kill
+# Kills and removes the container started by $ make run
+.PHONY: kill
+kill:
+	@./.dev/hbase-stop.sh --kill
+
+# $ make docker/get LABEL=some-label-name
+# $ make docker/get ENV=some-env-name
+.PHONY: docker/get
+docker/get:
+	@./.dev/dockerfile-get.sh < ./Dockerfile
+
+.PHONY: hbase/extract
+hbase/extract:
+	@./.dev/hbase-extract.sh
+
+.PHONY: shell
+shell:
+	@./.dev/hbase-extract.sh
 
 # $ make cluster/up
 # Starts a Hadoop/HBase cluster

@@ -10,20 +10,17 @@ This command starts a container mounted with the local path, copying the
 HBase files into it and fixing up the UID and GID
 
 Usage:
-    ${SCRIPT} <OUTPUT>
-    OUTPUT=/some/path ${SCRIPT}
+    ${SCRIPT} HBASE_PREFIX
+    HBASE_PREFIX=/some/path ${SCRIPT}
 
 Options:
-    \$OUTPUT    directory to extract the files into. For safety reasons,
-                this must contain 'hbase' somewhere in the effective name
+    \$HBASE_PREFIX  directory to extract the files into. For safety reasons,
+                    this must contain 'hbase' somewhere in the effective name
 
 Environment variables:
     \$DOCKER        Docker command (default: 'docker')
 eof
 }
-
-OUTPUT="${1:-${OUTPUT:-}}"
-DOCKER="${DOCKER:-docker}"
 
 declare -a ARGS
 declare -a ARGS_PRINTABLE
@@ -37,25 +34,25 @@ function main {
 }
 
 function prepare_output_path {
-    mkdir -p "${OUTPUT}"
-    OUTPUT="$(realpath "${OUTPUT}")"
+    mkdir -p "${HBASE_PREFIX}"
+    OUTPUT="$(realpath "${HBASE_PREFIX}")"
 
     if [[ "${EUID}" == '0' || "${UID}" == '0' ]] && [ "${DANGEROUSLY_RUN_AS_ROOT:-}" != 'true' ]; then
         echo >&2 "ERROR: running as root! Run as your regular user or export DANGEROUSLY_RUN_AS_ROOT=true if you're okay with that."
         exit 1
     fi
 
-    if [[ "${OUTPUT}" != *hbase* ]]; then
+    if [[ "${HBASE_PREFIX}" != *hbase* ]]; then
         echo >&2 "ERROR: no 'hbase' in the output path"
         exit 1
     fi
 
-    if [ "${OUTPUT}" = "$(getent passwd "${UID}" | cut -d: -f6)" ] && [ "${DANGEROUSLY_RUN_IN_HOME:-}" != 'true' ]; then
+    if [ "${HBASE_PREFIX}" = "$(getent passwd "${UID}" | cut -d: -f6)" ] && [ "${DANGEROUSLY_RUN_IN_HOME:-}" != 'true' ]; then
         echo >&2 "ERROR: output path is your home folder! Change it or export DANGEROUSLY_RUN_IN_HOME=true if you're okay with that."
         exit 1
     fi
 
-    rm -rf "${OUTPUT}"/*
+    rm -rf "${HBASE_PREFIX}"/*
 }
 
 function go_to_repo_root {
@@ -72,7 +69,7 @@ function build_args {
 
     ARGS=(
         "$@" run --rm --user root --entrypoint /bin/bash
-        -v "${OUTPUT}:/app" -w /app 
+        -v "${HBASE_PREFIX}:/app" -w /app 
         "${image_name}"
         -c "
             rm -rf /app/* && \
@@ -95,7 +92,10 @@ case "${1:-}" in
     ;;
 esac
 
-if [ -z "${OUTPUT}" ]; then
+HBASE_PREFIX="${1:-${HBASE_PREFIX:-}}"
+DOCKER="${DOCKER:-docker}"
+
+if [ -z "${HBASE_PREFIX}" ]; then
     usage >&2
     echo >&2
     echo >&2 "ERROR: no output path"
