@@ -23,7 +23,14 @@ eof
 main() {
     args_parse "$@"
 
-    for service in "${SERVICES[@]}"; do
+    if [ "${#SERVICES[@]}" -eq 0 ]; then
+        log_info "No service to wait for"
+        return 0
+    else
+        log_info "Waiting for ${#SERVICES[@]} services: ${SERVICES[*]}"
+    fi
+
+    for service in "${SERVICES[@]+"${SERVICES[@]}"}"; do
         wait_for_service "${service}"
     done
 }
