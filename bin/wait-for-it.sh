@@ -89,13 +89,14 @@ args_parse() {
     INTERVAL=2
     MAX_TRIES=50
     NC_OPTS=( -v )
+    VERBOSE=true
 
     while true; do
         case "${1:-}" in
         -h | --help )
             usage && exit 0 ;;
         -q | --quiet )
-            declare -a NC_OPTS && shift ;;
+            declare -a NC_OPTS && VERBOSE=false && shift ;;
         -i | --interval )
             INTERVAL="${2:-}" && shift 2 ;;
         -m | --max-tries )
@@ -119,7 +120,7 @@ args_parse() {
 }
 
 log_info() {
-    if [ -n "${VERBOSE}" ]; then
+    if [ "${VERBOSE}" = 'true' ]; then
         echo >&2 "INFO: $*"
     fi
 }
