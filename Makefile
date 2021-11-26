@@ -15,6 +15,7 @@ export BUILD_VERSION ?= $(VCS_REF)-hbase$(HBASE_VERSION)
 IMAGE_BASENAME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.title < ./Dockerfile )
 # Image complete tag name
 IMAGE_NAME := $(IMAGE_BASENAME):$(BUILD_VERSION)
+IMAGE_LATEST_NAME := $(IMAGE_BASENAME):latest
 # Repo base URL and description
 REPO_HOME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.url < ./Dockerfile )
 REPO_DESCRIPTION ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.description < ./Dockerfile )
@@ -48,6 +49,7 @@ print-image-name:
 .PHONY: lint
 lint:
 	$(DOCKER) run --rm -i hadolint/hadolint < ./Dockerfile
+	$(DOCKER) run --rm -v "$$PWD:/mnt:ro" koalaman/shellcheck:stable $(shell find ./.dev/ ./bin/ -name '*.sh')
 
 # $ make test
 # Runs the Bats tests
@@ -61,6 +63,8 @@ test:
 .PHONY: push
 push:
 	$(DOCKER) push $(IMAGE_NAME)
+	$(DOCKER) tag $(IMAGE_NAME) $(IMAGE_LATEST_NAME)
+	$(DOCKER) push $(IMAGE_LATEST_NAME)
 
 # $ make push-readme
 # Updates the Docker Hub description
@@ -68,6 +72,7 @@ push:
 push-readme:
 	@mkdir -p ./var
 	@.dev/markdown-rebase.sh "$(REPO_HOME)" -i README.md -o ./var/README.docker.md
+	@read -r -p "transformed README is available in ./var. Push to Docker Hub? " answer; [ "$${answer}" = 'yes' ]
 	@$(DOCKER) pushrm "$(IMAGE_BASENAME)" --file ./var/README.docker.md --short "$(REPO_DESCRIPTION)"
 
 # $ make start

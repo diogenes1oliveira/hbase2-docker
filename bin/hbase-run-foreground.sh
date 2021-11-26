@@ -87,8 +87,8 @@ args_parse() {
         usage && exit 0 ;;
     esac
 
-    SERVERS_TO_WAIT_FOR=( "$@" )
-    export HBASE_PREFIX="$(realpath "${HBASE_PREFIX:-/opt/hbase-current}")"
+    HBASE_PREFIX="$(realpath "${HBASE_PREFIX:-/opt/hbase-current}")"
+    export HBASE_PREFIX
     export JAVA_HOME="${JAVA_HOME:-/usr}"
 }
 

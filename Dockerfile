@@ -43,4 +43,4 @@ WORKDIR ${HBASE_PREFIX}
 STOPSIGNAL SIGINT
 
 ENTRYPOINT [ "/bin/docker-entrypoint.sh" ]
-CMD [ "hbase-run-foreground.sh" ]
+CMD [ "/bin/hbase-run-foreground.sh" ]

@@ -88,8 +88,8 @@ add_property() {
     local name="$2"
     local value="$3"
 
-    local entry="<property><name>${name}</name><value>${value}</value></property>"
-    local escaped_entry="$(echo "${entry}" | sed 's/\//\\\//g')"
+    entry="<property><name>${name}</name><value>${value}</value></property>"
+    escaped_entry="$(echo "${entry}" | sed 's/\//\\\//g')"
     if ! [ -f "${path}.bkp" ]; then
         cp "${path}" "${path}.bkp"
     fi
@@ -99,11 +99,11 @@ add_property() {
 hbase_print_env() (
     cd "$(dirname "$(realpath "${SCRIPT}")")"
 
-    for name in $( awk 'BEGIN{for(v in ENVIRON) print v}' ) ; do
+    while read -r name; do
         if [[ "${name}" = HBASE_* ]]; then
             printf 'export %s=%s\n' "${name}" "$(./shell-pprint.sh <<<"${!name}")"
         fi
-    done
+    done < <( awk 'BEGIN{for(v in ENVIRON) print v}' )
 )
 
 configure() {
@@ -116,7 +116,7 @@ configure() {
 
     info "Configuring ${module}"
     for c in $(printenv | perl -sne 'print "$1 " if m/^${envPrefix}_(.+?)=.*/' -- "-envPrefix=${env_prefix}"); do
-        name=`echo ${c} | perl -pe 's/___/-/g; s/__/_/g; s/_/./g'`
+        name="$(printf '%s' "${c}" | perl -pe 's/___/-/g; s/__/_/g; s/_/./g')"
         var="${env_prefix}_${c}"
         value="${!var}"
         info "  Setting ${name}=${value}"
@@ -140,8 +140,9 @@ args_error() {
 }
 
 args_parse() {
-    export HBASE_PREFIX="${HBASE_PREFIX:-/opt/hbase-current}"
-    export HBASE_PREFIX="$(realpath "${HBASE_PREFIX}")"
+    HBASE_PREFIX="${HBASE_PREFIX:-/opt/hbase-current}"
+    HBASE_PREFIX="$(realpath "${HBASE_PREFIX}")"
+    export HBASE_PREFIX
     export HBASE_ROLE="${HBASE_ROLE:-standalone}"
     export JAVA_HOME="${JAVA_HOME:-/usr}"
 

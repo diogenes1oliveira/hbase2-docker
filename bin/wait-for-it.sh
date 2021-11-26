@@ -41,7 +41,7 @@ wait_for_service() {
 
     log_info "Waiting for ${host} on port ${port}"
 
-    let i=1
+    i=1
 
     until tcp_test "${host}" "${port}"; do
         log_info "[${i}/${MAX_TRIES}] ${host}:${port} is not available yet"
@@ -51,7 +51,7 @@ wait_for_service() {
         fi
 
         log_info "[${i}/${MAX_TRIES}] try once again in ${INTERVAL}s..."
-        let "i++"
+        i="$((i+1))"
         sleep "${INTERVAL}"
     done
 
@@ -61,7 +61,8 @@ wait_for_service() {
 tcp_test() {
     host="$1"
     port="$2"
-    nc ${VERBOSE} -z "${host}" "${port}"
+
+    nc "${NC_OPTS[@]+"${NC_OPTS[@]}"}" -z "${host}" "${port}"
 }
 
 args_error() {
@@ -77,7 +78,7 @@ args_parse() {
     args=( "$@" )
 
     set +u
-    args+=( ${original_args[@]} )
+    args+=( "${original_args[@]+"${original_args[@]}"}" )
     set -u
 
     if ! OPTS="$(getopt -l 'help,quiet,interval:,max-tries:' -o 'hqi:m:' -- "${args[@]}")"; then
@@ -87,14 +88,14 @@ args_parse() {
     eval set -- "${OPTS}"
     INTERVAL=2
     MAX_TRIES=50
-    VERBOSE='-v'
+    NC_OPTS=( -v )
 
     while true; do
         case "${1:-}" in
         -h | --help )
             usage && exit 0 ;;
         -q | --quiet )
-            VERBOSE= && shift ;;
+            declare -a NC_OPTS && shift ;;
         -i | --interval )
             INTERVAL="${2:-}" && shift 2 ;;
         -m | --max-tries )

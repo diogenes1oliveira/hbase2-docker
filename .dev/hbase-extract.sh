@@ -29,13 +29,13 @@ function main {
     prepare_output_path
     build_args
 
-    echo "$ ${ARGS_PRINTABLE[@]}"
+    echo "$ ${ARGS_PRINTABLE[*]}"
     exec "${ARGS[@]}"
 }
 
 function prepare_output_path {
     mkdir -p "${HBASE_PREFIX}"
-    OUTPUT="$(realpath "${HBASE_PREFIX}")"
+    HBASE_PREFIX="$(realpath "${HBASE_PREFIX}")"
 
     if [[ "${EUID}" == '0' || "${UID}" == '0' ]] && [ "${DANGEROUSLY_RUN_AS_ROOT:-}" != 'true' ]; then
         echo >&2 "ERROR: running as root! Run as your regular user or export DANGEROUSLY_RUN_AS_ROOT=true if you're okay with that."
@@ -52,7 +52,7 @@ function prepare_output_path {
         exit 1
     fi
 
-    rm -rf "${HBASE_PREFIX}"/*
+    rm -rf "${HBASE_PREFIX:?}"/*
 }
 
 function go_to_repo_root {

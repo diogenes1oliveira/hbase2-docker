@@ -35,12 +35,12 @@ PORT_ENV_NAMES=(
 main() {
     go_to_repo_root
     args_parse "$@"
-    build_command_start
+    build_command_start "$@"
     add_env_mappings
     add_port_mappings
 
     ARGS+=( "${IMAGE_NAME}" "${ORIGINAL_ARGS[@]+"${ORIGINAL_ARGS[@]}"}" )
-    echo "$ ${ARGS[@]}"
+    echo "$ ${ARGS[*]}"
     exec "${ARGS[@]}"
 }
 
@@ -77,9 +77,9 @@ add_env_mappings() {
     source ./bin/hbase-config-build.sh env
 
     # Passthrough HBASE_CONF_ environment variables
-    for env_name in $(awk 'BEGIN{for(v in ENVIRON) print v}' | grep HBASE_CONF_); do
+    while read -r env_name; do
         ARGS+=( -e "${env_name}" )
-    done
+    done < <( awk 'BEGIN{for(v in ENVIRON) print v}' | grep HBASE_CONF_ )
 }
 
 go_to_repo_root() {

@@ -29,7 +29,7 @@ function main {
         CMD="${CMD}, ${arg}"
     done
 
-    ./hbase-shell-run.sh ${LOG_ARG} "${CMD}"
+    ./hbase-shell-run.sh "${SHELL_ARGS[@]+"${SHELL_ARGS[@]}"}" "${CMD}"
 
 }
 
@@ -42,7 +42,7 @@ function args_parse {
         args_error "failed to parse args"
     fi
 
-    LOG_ARG=
+    declare -a SHELL_ARGS
     eval set -- "${OPTS}"
     set -euo pipefail
 
@@ -51,8 +51,8 @@ function args_parse {
         -h | --help )
             usage
             exit 0 ;;
-        -t | --full-log )
-            LOG_ARG="${arg}" ;;
+        -l | --full-log )
+            SHELL_ARGS+=( --full-log ) ;;
         (--)
             shift && break ;;
         (*)

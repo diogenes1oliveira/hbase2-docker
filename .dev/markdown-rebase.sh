@@ -134,7 +134,7 @@ args_parse() {
             break
             ;;
         * )
-            args_error "Unknown argument '${arg}'"
+            args_error "Unknown argument '${1:-}'"
             ;;
         esac
     done
@@ -144,7 +144,7 @@ args_parse() {
 
     for var in REMOTE INPUT OUTPUT; do
         if [ -z "${!var:-}" ]; then
-            args_error "no value for ${arg}"
+            args_error "no value for ${var}"
         fi
     done
 

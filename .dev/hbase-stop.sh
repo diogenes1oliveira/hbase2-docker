@@ -28,12 +28,12 @@ declare -a STOP_ARGS
 declare -a PS_ARGS
 
 function main {
-    build_args
+    build_args "$@"
 
     if ! ( "${PS_ARGS[@]}" | grep -q "${HBASE_CONTAINER_NAME}" ); then
         echo >&2 "INFO: container is not running"
     else
-        echo >&2 "$ ${STOP_ARGS[@]}"
+        echo >&2 "$ ${STOP_ARGS[*]}"
         exec "${STOP_ARGS[@]}"
     fi
 }
@@ -63,7 +63,8 @@ case "${1:-}" in
     ;;
 -k | --kill )
     KILL=true
+    shift
     ;;
 esac
 
-main
+main "$@"

@@ -148,7 +148,8 @@ for more details.
 
 ### Linting and Testing
 
-To run [hadolint](https://github.com/hadolint/hadolint) against the Dockerfile:
+To run [hadolint](https://github.com/hadolint/hadolint) against the Dockerfile
+and [shellcheck](https://github.com/koalaman/shellcheck) against the shell scripts:
 
 ```shell
 $ make lint

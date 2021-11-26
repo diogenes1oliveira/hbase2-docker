@@ -5,32 +5,30 @@ setup() {
     load '../test_helper/bats-assert/load'
 
     go_to_repo_root
+    SCRIPT="$(realpath ./.dev/markdown-rebase.sh)"
 }
 
-function verify {
+function verify_markdown {
     input="$1"
     expected="$2"
 
-    run ./.dev/markdown-rebase.sh http://localhost <<<"${input}"
+    run "${SCRIPT}" http://localhost <<<"${input}"
     assert_success
 
-    actual="$( ./.dev/markdown-rebase.sh http://localhost <<<"${input}" )"
+    actual="$( "${SCRIPT}" http://localhost <<<"${input}" )"
     assert_equal "${actual}" "${expected}"
 }
 
 @test "replaces links" {
-    cd "${BATS_TEST_TMPDIR:-}"
-    touch some-file
-
-    verify '
+    verify_markdown '
         line without links
-        [link1](no-such-file) something else [link2](some-file)
+        [link1](no-such-file) something else [link2](README.md)
    
              # blank [link1](https://example.com)
 
     ' '
         line without links
-        [link1](no-such-file) something else [link2](http://localhost/some-file)
+        [link1](no-such-file) something else [link2](http://localhost/README.md)
    
              # blank [link1](https://example.com)
 
@@ -38,5 +36,5 @@ function verify {
 }
 
 @test "works with empty inputs" {
-    verify '' ''
+    verify_markdown '' ''
 }
