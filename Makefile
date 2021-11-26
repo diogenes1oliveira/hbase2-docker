@@ -71,7 +71,7 @@ push:
 .PHONY: push-readme
 push-readme:
 	@mkdir -p ./var
-	@.dev/markdown-rebase.sh "$(REPO_HOME)" -i README.md -o ./var/README.docker.md
+	@.dev/markdown-rebase.sh "$(REPO_HOME)/blob/main" -i README.md -o ./var/README.docker.md
 	@read -r -p "transformed README is available in ./var. Push to Docker Hub? " answer; [ "$${answer}" = 'yes' ]
 	@$(DOCKER) pushrm "$(IMAGE_BASENAME)" --file ./var/README.docker.md --short "$(REPO_DESCRIPTION)"
 
