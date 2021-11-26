@@ -71,7 +71,7 @@ To get more details about the cluster mode, check https://hbase.apache.org/book.
 
 ### Configuration
 
-The [entrypoint](./docker-entrypoint.sh) script maps environment variables with the prefix
+The [entrypoint](./bin/docker-entrypoint.sh) script maps environment variables with the prefix
 `HBASE_CONF_` by removing the prefix and replacing dots by underscores:
 
 ```xml
