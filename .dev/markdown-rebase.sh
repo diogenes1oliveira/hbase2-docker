@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-NAME="$0"
+SCRIPT="$0"
 
 usage() {
     cat <<eof
@@ -14,28 +14,29 @@ Obs: only valid links will be replaced, i.e., the file must exist currently
 in the file system.
 
 Usage:
-    ${NAME} <BASE_URL> [-i <PATH>] [-o <PATH>]
+    ${SCRIPT} <REMOTE> [-i|--input INPUT] [-o|--output OUTPUT]
 
 Options:
-    BASE_URL        Base link URL
-    -i, --input     path to the Makefile to be considered (default: -)
-                    If equals to '-', this script will read the contents from
-                    the stdin and consider the current directory as the base
-    -o, --output    output path of the result (default: -)
-                    If equals to '-', the output will be printed to stdout
+    \$REMOTE    Base link URL
+    \$INPUT     path to the Makefile to be considered (default: -)
+                If equals to '-', this script will read the contents from
+                the stdin and consider the current directory as the base
+    \$OUTPUT    output path of the result (default: -)
+                If equals to '-', the output will be printed to stdout
 eof
 }
 
-BASE_URL=
+REMOTE="${REMOTE:-}"
+INPUT="${INPUT:--}"
+OUTPUT="${OUTPUT:--}"
 BASE_DIR=
-INPUT=-
-OUTPUT=-
 
 args_get() {
     getopt -l 'help,input:,output:' -o 'hi:o:' -a -- "$@"
 }
 
 main() {
+    args_parse "$@"
     readarray -t lines < <( input_read )
 
     for line in "${lines[@]+"${lines[@]}"}"; do
@@ -77,7 +78,7 @@ links_get() {
 }
 
 link_get_url() {
-    link="${1:-}"
+    link="$1"
     if ! [[ "${link}" =~ \[[^\]]+\]\(([^\)]+)\) ]]; then
         echo >&2 "ERROR: input is not a Markdown link: '${link}'"
         exit 2
@@ -86,36 +87,30 @@ link_get_url() {
 }
 
 link_is_local() {
-    link="${1:-}"
+    link="$1"
     ( cd "${BASE_DIR}" && test -f "${link}" )
 }
 
 path_to_url() {
-    path="${1:-}"
+    path="$1"
     path_relative="$(realpath --relative-to="${BASE_DIR}" "${path}")"
+    path_unprefixed="$(sed -E 's;^\.?/;;' <<<"${path_relative}")"
 
-    printf '%s' "${BASE_URL}/$(sed -E 's;^\.?/;;' <<<"${path_relative}")"
+    printf '%s' "${REMOTE}/${path_unprefixed}"
 }
 
 args_error() {
-    local msg="${1:-failed to parse options}"
+    msg="$1"
+
     usage >&2
     echo >&2
     echo >&2 "ERROR: ${msg}"
     exit 1
 }
 
-vars_require() {
-    for arg in "$@"; do
-        if [ -z "${!arg:-}" ]; then
-            args_error "no value for $arg"
-        fi
-    done
-}
-
-arguments_parse() {
-    if ! OPTS="$(args_get "$@")"; then
-        args_error
+args_parse() {
+    if ! OPTS="$(getopt -l 'help,input:,output:' -o 'hi:o:' -a -- "$@")"; then
+        args_error 'failed to parse options'
     fi
 
     eval set -- "${OPTS}"
@@ -144,17 +139,20 @@ arguments_parse() {
         esac
     done
 
-    BASE_URL="${1:-}"
-    BASE_URL="${BASE_URL%/}"
+    REMOTE="${1:-${REMOTE:-}}"
+    REMOTE="${REMOTE%/}"
 
-    vars_require BASE_URL INPUT OUTPUT
+    for var in REMOTE INPUT OUTPUT; do
+        if [ -z "${!var:-}" ]; then
+            args_error "no value for ${arg}"
+        fi
+    done
 
-    if [ "${INPUT}"  = '-' ]; then
+    if [ "${INPUT}" = '-' ]; then
         BASE_DIR="$(pwd)"
     else
         BASE_DIR="$(dirname "$(realpath "${INPUT}")")"
     fi
 }
 
-arguments_parse "$@"
-main
+main "$@"

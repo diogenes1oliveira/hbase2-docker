@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-NAME="$0"
+SCRIPT="$0"
 
 usage() {
     cat <<eof
@@ -10,7 +10,9 @@ Obs: this will NOT handle weird cases, such as when there is a escape inside
 the label value, the label name occurs inside another label value, etc...
 
 Usage:
-    ${NAME} LABEL=<NAME> | ENV=<NAME>
+    ${SCRIPT} LABEL=<NAME> | ENV=<NAME>
+    LABEL=<NAME> ${SCRIPT}
+    ENV=<NAME> ${SCRIPT}
 eof
 }
 
@@ -47,11 +49,19 @@ match_pattern() {
 
 if [[ "${1:-}" =~ ^-h|--help$ ]]; then
     usage
+    exit 0
+elif [[ "${1:-}" =~ ^(ENV|LABEL)=(.+) ]]; then
+    TYPE="${BASH_REMATCH[1]}"
+    NAME="${BASH_REMATCH[2]}"
+elif [ -n "${ENV:-}" ] && [ -z "${LABEL:-}" ]; then
+    TYPE=ENV
+    NAME="${ENV}"
+elif [ -z "${ENV:-}" ] && [ -n "${LABEL:-}" ]; then
+    TYPE=LABEL
+    NAME="${LABEL}"
 else
-    TYPE="$(sed 's/=.*//' <<<"${1:-}")"
-    if ! [[ "${TYPE}" =~ ^LABEL|ENV$ ]]; then
-        echo >&2 "ERROR: bad spec"
-    fi
-    NAME="$(sed "s/^${TYPE}=//" <<<"${1:-}")"
-    main
+    echo >&2 "ERROR: exactly one of ENV= or LABEL= must be set"
+    exit 1
 fi
+
+main
