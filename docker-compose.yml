@@ -107,19 +107,17 @@ services:
     image: diogenes1oliveira/hbase2-docker:1.0.0-hbase2.0.2
     container_name: hbase-master
     hostname: hbase-master.localhost
-    command: /opt/hbase-current/bin/hbase master start
     restart: always
     environment:
       << : *x-hbase-env
       HBASE_ROLE: master
-      HBASE_WAIT_FOR: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181"
+      SERVICE_PRECONDITIONS: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181"
     ports:
       - 16000:16000
       - 16010:16010
 
   hbase-region1:
     image: diogenes1oliveira/hbase2-docker:1.0.0-hbase2.0.2
-    command: /opt/hbase-current/bin/hbase regionserver start
     container_name: hbase-region1
     hostname: hbase-region1.localhost
     restart: always
@@ -129,7 +127,7 @@ services:
       HBASE_CONF_hbase_regionserver_hostname: hbase-region1.localhost
       HBASE_CONF_hbase_regionserver_port: 16020
       HBASE_CONF_hbase_regionserver_info_port: 16030
-      HBASE_WAIT_FOR: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181 hbase-master.localhost:16010"
+      SERVICE_PRECONDITIONS: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181 hbase-master.localhost:16010"
     ports:
       - 16020:16020
       - 16030:16030

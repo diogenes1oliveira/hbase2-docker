@@ -6,7 +6,6 @@ function go_to_repo_root {
 }
 
 function set_hbase_env {
-    export DOCKER_COMPOSE="docker-compose -p test-bats-local -f ../docker-compose.yml"
     export HBASE_CONTAINER_NAME="test-bats-local"
     export IMAGE_NAME="$(go_to_repo_root && make -s print-image-name)"
 }

@@ -107,16 +107,16 @@ hbase/extract:
 shell:
 	@./.dev/hbase-extract.sh
 
-# $ make cluster/up
-# Starts a Hadoop/HBase cluster
-.PHONY: cluster/up
-cluster/up:
+# $ make compose/up
+# Starts a Hadoop/HBase cluster via docker-compose
+.PHONY: compose/up
+compose/up:
 	$(DOCKER_COMPOSE) up --remove-orphans --renew-anon-volumes --detach
 
-# $ make cluster/rm
-# Terminates and cleans up the cluster started by $ make cluster/up
-.PHONY: cluster/rm
-cluster/rm:
+# $ make compose/rm
+# Terminates and cleans up the cluster started by $ make compose/up
+.PHONY: compose/rm
+compose/rm:
 	$(DOCKER_COMPOSE) kill -s 9
 	$(DOCKER_COMPOSE) rm -fsv
 	$(DOCKER) volume prune -f

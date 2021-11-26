@@ -36,7 +36,8 @@ RUN set -x && \
 ENV HBASE_HOME=/opt/hbase-current
 ENV HBASE_CONF_DIR=/etc/hbase \
     PATH="${HBASE_HOME}/bin/:${PATH}" \
-    USER=root
+    USER=root \
+    HBASE_ROLE=standalone
 
 COPY ./bin/* /bin/
 WORKDIR ${HBASE_HOME}
