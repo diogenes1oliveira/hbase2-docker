@@ -1,20 +1,20 @@
 
 setup() {
-    load 'utils'
-    load 'test_helper/bats-support/load'
-    load 'test_helper/bats-assert/load'
+    load '../utils'
+    load '../test_helper/bats-support/load'
+    load '../test_helper/bats-assert/load'
 
-    SCRIPT="$(find_in_hierarchy .dev/rebase-markdown-links.sh)"
+    go_to_repo_root
 }
 
-function verify_output {
+function verify {
     input="$1"
     expected="$2"
 
-    run "${SCRIPT}" http://localhost <<<"${input}"
+    run ./.dev/markdown-rebase.sh http://localhost <<<"${input}"
     assert_success
 
-    actual="$("${SCRIPT}" http://localhost <<<"${input}")"
+    actual="$( ./.dev/markdown-rebase.sh http://localhost <<<"${input}" )"
     assert_equal "${actual}" "${expected}"
 }
 
@@ -22,7 +22,7 @@ function verify_output {
     cd "${BATS_TEST_TMPDIR:-}"
     touch some-file
 
-    verify_output '
+    verify '
         line without links
         [link1](no-such-file) something else [link2](some-file)
    
@@ -38,5 +38,5 @@ function verify_output {
 }
 
 @test "works with empty inputs" {
-    verify_output '' ''
+    verify '' ''
 }
