@@ -108,9 +108,11 @@ services:
     container_name: hbase-master
     hostname: hbase-master.localhost
     command: /opt/hbase-current/bin/hbase master start
+    restart: always
     environment:
       << : *x-hbase-env
-      SERVICE_PRECONDITION: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181"
+      HBASE_ROLE: master
+      HBASE_WAIT_FOR: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181"
     ports:
       - 16000:16000
       - 16010:16010
@@ -120,12 +122,14 @@ services:
     command: /opt/hbase-current/bin/hbase regionserver start
     container_name: hbase-region1
     hostname: hbase-region1.localhost
+    restart: always
     environment:
       << : *x-hbase-env
+      HBASE_ROLE: regionserver
       HBASE_CONF_hbase_regionserver_hostname: hbase-region1.localhost
       HBASE_CONF_hbase_regionserver_port: 16020
       HBASE_CONF_hbase_regionserver_info_port: 16030
-      SERVICE_PRECONDITION: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181 hbase-master.localhost:16010"
+      HBASE_WAIT_FOR: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181 hbase-master.localhost:16010"
     ports:
       - 16020:16020
       - 16030:16030

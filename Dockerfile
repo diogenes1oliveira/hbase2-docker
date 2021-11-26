@@ -33,13 +33,13 @@ RUN set -x && \
     mkdir /opt/hbase-${HBASE_VERSION}/logs && \
     mkdir /hadoop-data
 
-ENV HBASE_PREFIX=/opt/hbase-current
+ENV HBASE_HOME=/opt/hbase-current
 ENV HBASE_CONF_DIR=/etc/hbase \
-    PATH="${HBASE_PREFIX}/bin/:${PATH}" \
+    PATH="${HBASE_HOME}/bin/:${PATH}" \
     USER=root
 
 COPY ./bin/* /bin/
-WORKDIR ${HBASE_PREFIX}
+WORKDIR ${HBASE_HOME}
 STOPSIGNAL SIGINT
 
 ENTRYPOINT [ "/bin/docker-entrypoint.sh" ]

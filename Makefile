@@ -25,7 +25,7 @@ REPO_DESCRIPTION ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.im
 export DOCKER ?= docker
 export DOCKER_COMPOSE ?= docker-compose
 export CONTAINER_NAME ?= hbase2-docker
-export HBASE_PREFIX ?= ./var/hbase
+export HBASE_HOME ?= ./var/hbase
 
 # $ make build
 # Builds the Docker image

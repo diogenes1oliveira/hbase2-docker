@@ -12,11 +12,11 @@ Usage:
 
 Options:
     -l, --full-log      don't to remove some useless HBase log data
-    \$COMMAND           commands to be executed
+    \$COMMAND            commands to be executed
                         precedence is argument > environment variable
-    \$HBASE_PREFIX      root HBase installation directory
+    \$HBASE_HOME         root HBase installation directory
                         (default: REPO_ROOT/var/hbase)
-    \$JAVA_HOME         path to a Java installation (default: /usr)
+    \$JAVA_HOME          path to a Java installation (default: /usr)
 eof
 }
 
@@ -39,7 +39,7 @@ function go_to_repo_root {
 }
 
 function hbase_terminal {
-    "${HBASE_PREFIX}/bin/hbase" shell "$@"
+    "${HBASE_HOME}/bin/hbase" shell "$@"
 }
 
 function hbase_trim {
@@ -52,14 +52,14 @@ function hbase_trim {
 }
 
 function hbase_home_set {
-    if [ -n "${HBASE_PREFIX:-}" ]; then
-        HBASE_PREFIX="$(realpath "${HBASE_PREFIX}")"
+    if [ -n "${HBASE_HOME:-}" ]; then
+        HBASE_HOME="$(realpath "${HBASE_HOME}")"
     fi
 
     go_to_repo_root
 
-    if [ -z "${HBASE_PREFIX:-}" ]; then
-        HBASE_PREFIX="$(pwd)/var/hbase"
+    if [ -z "${HBASE_HOME:-}" ]; then
+        HBASE_HOME="$(pwd)/var/hbase"
     fi
 }
 

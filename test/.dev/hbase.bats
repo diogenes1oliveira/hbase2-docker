@@ -10,7 +10,7 @@ setup() {
 
     make -s kill || true
     OUTPUT=./var/hbase make -s hbase/extract
-    export HBASE_PREFIX="$(realpath ./var/hbase)"
+    export HBASE_HOME="$(realpath ./var/hbase)"
 }
 
 teardown() {

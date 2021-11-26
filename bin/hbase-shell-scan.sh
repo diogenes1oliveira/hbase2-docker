@@ -13,9 +13,9 @@ Options:
     -l, --full-log      don't to remove some useless HBase log data
     TABLE               name of the table to be scanned
     ARGS                extra arguments to be passed to scan
-    \$HBASE_PREFIX      root HBase installation directory
+    \$HBASE_HOME         root HBase installation directory
                         (default: REPO_ROOT/var/hbase)
-    \$JAVA_HOME         path to a Java installation (default: /usr)
+    \$JAVA_HOME          path to a Java installation (default: /usr)
 eof
 }
 
