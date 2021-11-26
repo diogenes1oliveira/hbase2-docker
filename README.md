@@ -132,15 +132,15 @@ binds them all to `localhost`, so if you're going to change any of them, be sure
 The following build variables are available. Be sure to set them consistently when
 executing multiple `make` commands:
 
-| Variable           | Default                              | Description                  |
-| ------------------ | ------------------------------------ | ---------------------------- |
-| `IMAGE_BASENAME`   | `diogenes1oliveira/hbase2-docker`    | Image basename               |
-| `HBASE_VERSION`    | `2.0.2`                              | HBase version                |
-| `VCS_REF`          | `1.0.0`                              | Git tag, commit ID or branch |
-| `BUILD_VERSION`    | `${VCS_REF}-hbase${HBASE_VERSION}`   | Image tag                    |
-| `BUILD_DATE`       | `1970-01-01T00:00:00Z`               | Current UTC timestamp        |
-| `REPO_HOME`        | Extracted from the Dockerfile labels | Repository HTTP(S) URL       |
-| `REPO_DESCRIPTION` | Extracted from the Dockerfile labels | Repository description       |
+| Variable           | Default                                                         | Description                  |
+| ------------------ | --------------------------------------------------------------- | ---------------------------- |
+| `IMAGE_BASENAME`   | Extracted from the label `org.opencontainers.image.title`       | Image basename               |
+| `HBASE_VERSION`    | `2.0.2`                                                         | HBase version                |
+| `VCS_REF`          | `1.0.0`                                                         | Git tag, commit ID or branch |
+| `BUILD_VERSION`    | `${VCS_REF}-hbase${HBASE_VERSION}`                              | Image tag                    |
+| `BUILD_DATE`       | `1970-01-01T00:00:00Z`                                          | Current UTC timestamp        |
+| `REPO_HOME`        | Extracted from the label `org.opencontainers.image.url`         | Repository HTTP(S) URL       |
+| `REPO_DESCRIPTION` | Extracted from the label `org.opencontainers.image.description` | Repository description       |
 
 Of course, you can also directly run `docker build` and `docker push`, but then you'll
 have to set the build arguments directly. Check the aforementioned [Makefile](./Makefile)
@@ -178,5 +178,5 @@ $ make push VCS_REF=some-git-tag
 To update the description in the Docker Hub:
 
 ```
-
+$ make push-readme
 ```
