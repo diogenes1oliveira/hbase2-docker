@@ -20,14 +20,14 @@ eof
 main() {
     args_parse "$@"
 
-    hbase_wait_for_servers
+    hbase_wait_for_servers "${SERVICE_PRECONDITIONS:-}"
 
     case "${HBASE_ROLE}" in
     standalone )
         STARTED=true
         trap hbase_standalone_stop SIGINT
         trap hbase_standalone_stop SIGTERM
-        hbase_standalone_start
+        hbase_standalone_start "$@"
         ;;
     master | regionserver )
         "${HBASE_HOME}/bin/hbase" "${HBASE_ROLE}" start "$@"
@@ -40,7 +40,7 @@ main() {
 
 hbase_wait_for_servers() (
     cd "$(dirname "$(realpath "${SCRIPT}")")"
-    eval set -- "${SERVICE_PRECONDITIONS:-}"
+    eval set -- "$1"
     ./wait-for-it.sh "$@"
 )
 
@@ -106,6 +106,7 @@ args_parse() {
     HBASE_HOME="$(realpath "${HBASE_HOME:-/opt/hbase-current}")"
     export HBASE_HOME
     export JAVA_HOME="${JAVA_HOME:-/usr}"
+    export HBASE_ROLE="${HBASE_ROLE:-standalone}"
 }
 
 main "$@"
