@@ -15,10 +15,10 @@ Options:
     TYPE               xml | properties | eval | env (default: 'xml')
 
 Environment variables:
-    \$HBASE_HOME     path to HBase installation directory
-                    (default: /opt/hbase-current)
-    \$HBASE_ROLE     master | regionserver | standalone (default: standalone)
-    \$JAVA_HOME      path to a Java installation (default: /usr)
+    \$HBASE_CONF_DIR    path to HBase configuration directory
+                       (default: /etc/hbase)
+    \$HBASE_ROLE        master | regionserver | standalone (default: standalone)
+    \$JAVA_HOME         path to a Java installation (default: /usr)
 
 This script maps environment variables with the prefix HBASE_CONF_ by removing
 the prefix and replacing dots by underscores:
@@ -40,14 +40,14 @@ main() {
 
     case "${TYPE}" in
     xml | properties )
-        configure "${HBASE_HOME}/conf/hbase-site.xml" hbase HBASE_CONF ;;
+        configure "${HBASE_CONF_DIR}/hbase-site.xml" hbase HBASE_CONF ;;
     eval )
         hbase_print_env ;;
     esac
 }
 
 hbase_set_default_envs() {
-    export HBASE_CONF_hbase_rootdir="${HBASE_CONF_hbase_rootdir:-${HBASE_HOME}/tmp/data/hbase}"
+    export HBASE_CONF_hbase_rootdir="${HBASE_CONF_hbase_rootdir:-/var/lib/hbase}"
 
     export HBASE_CONF_hbase_master_ipc_address="${HBASE_CONF_hbase_master_ipc_address:-0.0.0.0}"
     export HBASE_CONF_hbase_master_hostname="${HBASE_CONF_hbase_master_hostname:-localhost}"
@@ -65,7 +65,7 @@ hbase_set_default_envs() {
         export HBASE_CONF_hbase_cluster_distributed="${HBASE_CONF_hbase_cluster_distributed:-false}"
         export HBASE_CONF_hbase_unsafe_stream_capability_enforce="${HBASE_CONF_hbase_unsafe_stream_capability_enforce:-false}"
         export HBASE_MANAGES_ZK="${HBASE_MANAGES_ZK:-true}"
-        export HBASE_CONF_hbase_zookeeper_property_dataDir="${HBASE_CONF_hbase_zookeeper_property_dataDir:-${HBASE_HOME}/tmp/data/zookeeper}"
+        export HBASE_CONF_hbase_zookeeper_property_dataDir="${HBASE_CONF_hbase_zookeeper_property_dataDir:-/var/lib/zookeeper}"
     else
         info 'Setting up default cluster settings'
         export HBASE_CONF_hbase_cluster_distributed="${HBASE_CONF_hbase_cluster_distributed:-true}"
@@ -115,7 +115,7 @@ configure() {
     local value
 
     info "Configuring ${module}"
-    for c in $(printenv | perl -sne 'print "$1 " if m/^${envPrefix}_(.+?)=.*/' -- "-envPrefix=${env_prefix}"); do
+    for c in $(printenv | grep -v '^HBASE_CONF_DIR' | perl -sne 'print "$1 " if m/^${envPrefix}_(.+?)=.*/' -- "-envPrefix=${env_prefix}"); do
         name="$(printf '%s' "${c}" | perl -pe 's/___/-/g; s/__/_/g; s/_/./g')"
         var="${env_prefix}_${c}"
         value="${!var}"
@@ -123,7 +123,7 @@ configure() {
 
         case "${TYPE}" in
         xml )
-            add_property "${HBASE_HOME}/conf/${module}-site.xml" "${name}" "${value}" ;;
+            add_property "${HBASE_CONF_DIR}/${module}-site.xml" "${name}" "${value}" ;;
         properties )
             printf '%s\n' "${name}=${value}" ;;
         esac
@@ -140,9 +140,7 @@ args_error() {
 }
 
 args_parse() {
-    HBASE_HOME="${HBASE_HOME:-/opt/hbase-current}"
-    HBASE_HOME="$(realpath "${HBASE_HOME}")"
-    export HBASE_HOME
+    export HBASE_CONF_DIR="${HBASE_CONF_DIR:-/etc/hbase}"
     export HBASE_ROLE="${HBASE_ROLE:-standalone}"
     export JAVA_HOME="${JAVA_HOME:-/usr}"
 

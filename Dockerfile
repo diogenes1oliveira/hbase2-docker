@@ -1,4 +1,4 @@
-FROM openjdk:8
+FROM openjdk:8-bullseye
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -18,7 +18,8 @@ LABEL maintainer="Diógenes Oliveira <diogenes1oliveira@gmail.com>" \
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         net-tools=1.60+git20181103.0eebece-1 \
-        netcat=1.10-46 && \
+        netcat=1.10-46 \
+        supervisor=4.2.2-2 && \
     rm -rf /var/lib/apt/lists
 
 ARG HBASE_VERSION
@@ -28,16 +29,18 @@ RUN set -x && \
     curl -fSL "${HBASE_URL}.asc" -o /tmp/hbase.tar.gz.asc && \
     tar -xvf /tmp/hbase.tar.gz -C /opt/ && \
     rm /tmp/hbase.tar.gz* && \
-    ln -s /opt/hbase-${HBASE_VERSION}/conf /etc/hbase && \
-    ln -s /opt/hbase-${HBASE_VERSION} /opt/hbase-current && \
-    mkdir /opt/hbase-${HBASE_VERSION}/logs && \
-    mkdir /hadoop-data
+    mv /opt/hbase-${HBASE_VERSION} /opt/hbase && \
+    mv /opt/hbase/conf /etc/hbase && \
+    mkdir -p /var/log/hbase /var/run/hbase /var/lib/hbase /var/lib/zookeeper && \
+    addgroup --system hadoop && \
+    useradd --system --no-create-home --shell=/sbin/nologin --gid hadoop hbase && \
+    chown hbase:hadoop -R /var/log/hbase /var/run/hbase /var/lib/hbase /var/lib/zookeeper
 
-ENV HBASE_HOME=/opt/hbase-current
-ENV HBASE_CONF_DIR=/etc/hbase \
-    PATH="${HBASE_HOME}/bin/:${PATH}" \
-    USER=root \
-    HBASE_ROLE=standalone
+ENV HBASE_HOME=/opt/hbase \
+    HBASE_CONF_DIR=/etc/hbase \
+    HBASE_LOG_DIR=/var/log/hbase \
+    HBASE_PID_DIR=/var/run/hbase \
+    PATH=/opt/hbase/bin:${PATH}
 
 COPY ./bin/* /bin/
 WORKDIR ${HBASE_HOME}
