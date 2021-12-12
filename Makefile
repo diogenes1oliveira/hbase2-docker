@@ -1,6 +1,8 @@
 # This Makefile is a convenience to aggregate the build commands
 # Each phony target corresponds to a build command
 
+-include .env
+
 # Quasi-mandatory args. When building locally
 # HBase version
 export HBASE_VERSION ?= 2.0.2
@@ -26,6 +28,20 @@ export DOCKER ?= docker
 export DOCKER_COMPOSE ?= docker-compose
 export CONTAINER_NAME ?= hbase2-docker
 export HBASE_HOME ?= ./var/hbase
+
+# $ make build/info
+# Prints the configuration variables
+.PHONY: build/info
+build/info:
+	@echo "HBASE_VERSION=$(HBASE_VERSION)"
+	@echo "BUILD_DATE=$(BUILD_DATE)"
+	@echo "VCS_REF=$(VCS_REF)"
+	@echo "BUILD_VERSION=$(BUILD_VERSION)"
+	@echo "IMAGE_BASENAME=$(IMAGE_BASENAME)"
+	@echo "IMAGE_NAME=$(IMAGE_NAME)"
+	@echo "IMAGE_LATEST_NAME=$(IMAGE_LATEST_NAME)"
+	@echo "REPO_HOME=$(REPO_HOME)"
+	@echo "REPO_DESCRIPTION=$(REPO_DESCRIPTION)"
 
 # $ make build
 # Builds the Docker image
