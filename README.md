@@ -44,8 +44,8 @@ $ docker run -it --rm \
 Or you can use the convenience Makefile to start and stop it:
 
 ```shell
-$ make run
-$ make rm
+$ make start
+$ make kill
 ```
 
 The command above will start a standalone HBase cluster with all the necessary ports
