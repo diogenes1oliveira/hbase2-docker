@@ -1,7 +1,7 @@
 # hbase2-docker
 
 [![Build Status](https://github.com/diogenes1oliveira/hbase2-docker/actions/workflows/main.yml/badge.svg)](https://github.com/diogenes1oliveira/hbase2-docker/actions)
-[![Docker Hub](https://img.shields.io/docker/v/diogenes1oliveira/hbase2-docker)](hub.docker.com/r/diogenes1oliveira)
+[![Docker Hub](https://img.shields.io/docker/v/diogenes1oliveira/hbase2-docker)](https://hub.docker.com/r/diogenes1oliveira)
 [![License](https://img.shields.io/github/license/diogenes1oliveira/hbase2-docker)](https://github.com/diogenes1oliveira/hbase2-docker/blob/main/LICENSE)
 
 Dockerized HBase 2 for use in tests
