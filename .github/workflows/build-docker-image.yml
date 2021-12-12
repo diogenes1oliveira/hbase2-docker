@@ -4,7 +4,7 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     env:
-      VCS_REF: ${{ github.ref_type == "tag" && github.ref_name || github.sha }}
+      VCS_REF: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
     steps:
       - name: Get current date
         id: date
