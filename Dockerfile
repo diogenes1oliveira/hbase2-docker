@@ -1,20 +1,5 @@
 FROM openjdk:8-bullseye
 
-ARG BUILD_DATE
-ARG VCS_REF
-ARG BUILD_VERSION
-
-LABEL maintainer="Diógenes Oliveira <diogenes1oliveira@gmail.com>" \
-    org.opencontainers.image.title="diogenes1oliveira/hbase2-docker" \
-    org.opencontainers.image.description="Dockerized HBase 2 for use in tests" \
-    org.opencontainers.image.authors="Diógenes Oliveira <diogenes1oliveira@gmail.com>" \
-    org.opencontainers.image.documentation="https://github.com/diogenes1oliveira/hbase2-docker/blob/main/README.md" \
-    org.opencontainers.image.version="${BUILD_VERSION}" \
-    org.opencontainers.image.url="https://github.com/diogenes1oliveira/hbase2-docker" \
-    org.opencontainers.image.source="https://github.com/diogenes1oliveira/hbase2-docker.git" \
-    org.opencontainers.image.revision="${VCS_REF}" \
-    org.opencontainers.image.created="${BUILD_DATE}"
-
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         net-tools=1.60+git20181103.0eebece-1 \
@@ -47,3 +32,18 @@ WORKDIR ${HBASE_HOME}
 STOPSIGNAL SIGINT
 
 ENTRYPOINT [ "/bin/docker-entrypoint.sh" ]
+
+ARG BUILD_DATE
+ARG VCS_REF
+ARG BUILD_VERSION
+
+LABEL maintainer="Diógenes Oliveira <diogenes1oliveira@gmail.com>" \
+    org.opencontainers.image.title="diogenes1oliveira/hbase2-docker" \
+    org.opencontainers.image.description="Dockerized HBase 2 for use in tests" \
+    org.opencontainers.image.authors="Diógenes Oliveira <diogenes1oliveira@gmail.com>" \
+    org.opencontainers.image.documentation="https://github.com/diogenes1oliveira/hbase2-docker/blob/main/README.md" \
+    org.opencontainers.image.version="${BUILD_VERSION}" \
+    org.opencontainers.image.url="https://github.com/diogenes1oliveira/hbase2-docker" \
+    org.opencontainers.image.source="https://github.com/diogenes1oliveira/hbase2-docker.git" \
+    org.opencontainers.image.revision="${VCS_REF}" \
+    org.opencontainers.image.created="${BUILD_DATE}"
