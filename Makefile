@@ -33,15 +33,15 @@ export HBASE_HOME ?= ./var/hbase
 # Prints the configuration variables
 .PHONY: build/info
 build/info:
-	@echo "HBASE_VERSION=$$HBASE_VERSION"
-	@echo "BUILD_DATE=$$BUILD_DATE"
-	@echo "VCS_REF=$$VCS_REF"
-	@echo "BUILD_VERSION=$$BUILD_VERSION"
-	@echo "IMAGE_BASENAME=$$IMAGE_BASENAME"
-	@echo "IMAGE_NAME=$$IMAGE_NAME"
-	@echo "IMAGE_LATEST_NAME=$$IMAGE_LATEST_NAME"
-	@echo "REPO_HOME=$$REPO_HOME"
-	@echo "REPO_DESCRIPTION=$$REPO_DESCRIPTION"
+	@echo "HBASE_VERSION=$(HBASE_VERSION)"
+	@echo "BUILD_DATE=$(BUILD_DATE)"
+	@echo "VCS_REF=$(VCS_REF)"
+	@echo "BUILD_VERSION=$(BUILD_VERSION)"
+	@echo "IMAGE_BASENAME=$(IMAGE_BASENAME)"
+	@echo "IMAGE_NAME=$(IMAGE_NAME)"
+	@echo "IMAGE_LATEST_NAME=$(IMAGE_LATEST_NAME)"
+	@echo "REPO_HOME=$(REPO_HOME)"
+	@echo "REPO_DESCRIPTION=$(REPO_DESCRIPTION)"
 
 # $ make build
 # Builds the Docker image

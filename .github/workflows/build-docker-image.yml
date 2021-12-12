@@ -4,16 +4,16 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
       - name: Set VCS_REF and BUILD_DATE
         run: |
           echo "VCS_REF=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}" > .env
           echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> .env
           make -s build/info
-
-      - name: Checkout repo
-        uses: actions/checkout@v2
-        with:
-          submodules: true
 
       - name: Login to Docker Hub
         if: github.ref_type == 'tag'
