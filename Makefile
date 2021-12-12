@@ -82,12 +82,17 @@ push:
 	$(DOCKER) tag $(IMAGE_NAME) $(IMAGE_LATEST_NAME)
 	$(DOCKER) push $(IMAGE_LATEST_NAME)
 
-# $ make push-readme
-# Updates the Docker Hub description
-.PHONY: push-readme
-push-readme:
+# $ make readme/absolutize
+# Absolutizes the README.md file links
+.PHONY: readme/absolutize
+readme/absolutize:
 	@mkdir -p ./var
 	@.dev/markdown-rebase.sh "$(REPO_HOME)/blob/main" -i README.md -o ./var/README.docker.md
+
+# $ make readme/push
+# Updates the Docker Hub description
+.PHONY: readme/push
+readme/push: readme/absolutize
 	@read -r -p "transformed README is available in ./var. Push to Docker Hub? " answer; [ "$${answer}" = 'yes' ]
 	@$(DOCKER) pushrm "$(IMAGE_BASENAME)" --file ./var/README.docker.md --short "$(REPO_DESCRIPTION)"
 
