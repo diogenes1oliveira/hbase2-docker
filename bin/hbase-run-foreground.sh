@@ -11,7 +11,7 @@ Usage:
 
 Environment variables:
     \$SERVICE_PRECONDITIONS   space-separated list of HOST:PORT to wait for
-    \$HBASE_HOME              root of HBase installation (default: /opt/hbase-current)
+    \$HBASE_HOME              root of HBase installation (default: /opt/hbase)
     \$JAVA_HOME               path to a Java installation (default: /usr)
     \$HBASE_ROLE              master, regionserver or standalone (default: standalone)
 eof
