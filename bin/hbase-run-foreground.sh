@@ -80,6 +80,7 @@ args_parse() {
     export HBASE_IDENT_STRING=docker
     export HBASE_LOG_DIR="${HBASE_LOG_DIR:-/var/log/hbase}"
     export HBASE_PID_DIR="${HBASE_PID_DIR:-/var/run/hbase}"
+    export HBASE_OPTS="${HBASE_OPTS:-} ${HBASE_LOG_OPTS:-}"
 
     case "${HBASE_ROLE}" in
     standalone | master )

@@ -39,6 +39,7 @@ ENV HBASE_HOME=/opt/hbase \
     HBASE_CONF_DIR=/etc/hbase \
     HBASE_LOG_DIR=/var/log/hbase \
     HBASE_PID_DIR=/var/run/hbase \
+    HBASE_LOG_OPTS='-Dhbase.log.maxfilesize=1MB -Dhbase.log.maxbackupindex=1 -Dhbase.security.log.maxfilesize=1MB -Dhbase.security.log.maxbackupindex=1' \
     PATH=/opt/hbase/bin:${PATH}
 
 COPY ./bin/* /bin/
