@@ -73,8 +73,9 @@ function build_args {
         "${image_name}"
         -c "
             rm -rf /app/* && \
-            cp -r /opt/hbase-current/* /app && \
-            cp -r /app/conf /app/conf.bkp && \
+            cp -r /opt/hbase/* /app && \
+            cp -r /etc/hbase /app/conf && \
+            cp -r /etc/hbase /app/conf.bkp && \
             chown ${UID}:$(id -g) -R /app
         "
     )

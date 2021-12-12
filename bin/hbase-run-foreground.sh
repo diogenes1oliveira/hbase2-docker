@@ -11,7 +11,7 @@ Usage:
 
 Environment variables:
     \$SERVICE_PRECONDITIONS   space-separated list of HOST:PORT to wait for
-    \$HBASE_HOME              root of HBase installation (default: /opt/hbase-current)
+    \$HBASE_HOME              root of HBase installation (default: /opt/hbase)
     \$JAVA_HOME               path to a Java installation (default: /usr)
     \$HBASE_ROLE              master, regionserver or standalone (default: standalone)
 eof
@@ -21,81 +21,51 @@ main() {
     args_parse "$@"
 
     hbase_wait_for_servers "${SERVICE_PRECONDITIONS:-}"
-
-    case "${HBASE_ROLE}" in
-    standalone )
-        STARTED=true
-        trap hbase_standalone_stop SIGINT
-        trap hbase_standalone_stop SIGTERM
-        hbase_standalone_start "$@"
-        ;;
-    master | regionserver )
-        "${HBASE_HOME}/bin/hbase" "${HBASE_ROLE}" start "$@"
-        ;;
-    * )
-        echo >&2 "ERROR: invalid \$HBASE_ROLE: '${HBASE_ROLE}'"
-        return 1
-    esac
+    hbase_start
 }
 
 hbase_wait_for_servers() (
     cd "$(dirname "$(realpath "${SCRIPT}")")"
     eval set -- "$1"
+
     ./wait-for-it.sh "$@"
 )
 
-hbase_standalone_start() {
+hbase_start() {
+    log_name="hbase-${HBASE_IDENT_STRING}-${HBASE_COMMAND}-${HOSTNAME:-}"
+    log_files=(
+        "${HBASE_LOG_DIR}/SecurityAuth.audit"
+        "${HBASE_LOG_DIR}/${log_name}.out"
+        "${HBASE_LOG_DIR}/${log_name}.log"
+    )
 
-    if ! "${HBASE_HOME}/bin/start-hbase.sh" "$@"; then
-        hbase_standalone_log ERROR 'HBase failed to start'
-        STARTED=false
-        exit 1
-    fi
+    set +e
+    EXIT_CODE=1
 
-    sleep 5 &
-    BACKGROUND_PID="$!"
-    wait "${BACKGROUND_PID}"
+    trap hbase_stop SIGTERM SIGINT SIGQUIT
+    trap tail_stop EXIT
+    "${HBASE_HOME}"/bin/hbase-daemon.sh start "${HBASE_COMMAND}" "$@"
 
-    hbase_standalone_log INFO 'HBase started'
+    tail -q -F "${log_files[@]}" &
+    TAIL_PID="$!"
+    wait "${TAIL_PID}" || true
 
-    tail --retry -n +0 -f "${HBASE_HOME}"/logs/* &
-    BACKGROUND_PID="$!"
-    wait "${BACKGROUND_PID}"
+    exit "${EXIT_CODE}"
 }
 
-hbase_standalone_stop() {
-    hbase_standalone_log INFO 'HBase requested to stop'
-
-    if [ "${STARTED}" = 'true' ]; then
-        set +e
-        "${HBASE_HOME}/bin/stop-hbase.sh"
-        code="$?"
-        set -e
-    else
-        code=0
-    fi
-
-    if [ -n "${BACKGROUND_PID:-}" ]; then
-        kill -9 "${BACKGROUND_PID}" || true
-    fi
-
-    hbase_standalone_log INFO "HBase stopped with status ${code}"
-    exit "${code}"
+hbase_stop() {
+    set +e
+    "${HBASE_HOME}"/bin/hbase-daemon.sh stop "${HBASE_COMMAND}" "$@"
+    EXIT_CODE="$?"
+    tail_stop
 }
 
-hbase_standalone_log() {
-    level="$1"
-    shift
-
-    ( echo; echo; echo ) >&2
-    echo >&2 '################################'
-
-    IFS=' ' printf >&2 '%s: %s\n' "${level}(${SCRIPT})" "$*"
-
-    echo >&2 '################################'
-    ( echo; echo; echo ) >&2
+tail_stop() {
+    if [ -n "${TAIL_PID}" ]; then
+        kill "${TAIL_PID}" || true
+        TAIL_PID=
+    fi
 }
-
 
 args_parse() {
     case "${1:-}" in
@@ -103,10 +73,24 @@ args_parse() {
         usage && exit 0 ;;
     esac
 
-    HBASE_HOME="$(realpath "${HBASE_HOME:-/opt/hbase-current}")"
+    HBASE_HOME="$(realpath "${HBASE_HOME:-/opt/hbase}")"
     export HBASE_HOME
     export JAVA_HOME="${JAVA_HOME:-/usr}"
     export HBASE_ROLE="${HBASE_ROLE:-standalone}"
+    export HBASE_IDENT_STRING=docker
+    export HBASE_LOG_DIR="${HBASE_LOG_DIR:-/var/log/hbase}"
+    export HBASE_PID_DIR="${HBASE_PID_DIR:-/var/run/hbase}"
+
+    case "${HBASE_ROLE}" in
+    standalone | master )
+        HBASE_COMMAND=master ;;
+    regionserver )
+        HBASE_COMMAND=regionserver ;;
+    *)
+        echo >&2 "ERROR: Invalid HBASE_ROLE '${HBASE_ROLE}'"
+        return 1
+        ;;
+    esac
 }
 
 main "$@"
