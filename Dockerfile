@@ -26,13 +26,13 @@ ARG HBASE_URL="https://archive.apache.org/dist/hbase/${HBASE_VERSION}/hbase-${HB
 RUN set -x && \
     curl -fSL "${HBASE_URL}" -o /tmp/hbase.tar.gz && \
     curl -fSL "${HBASE_URL}.asc" -o /tmp/hbase.tar.gz.asc && \
-    tar -xvf /tmp/hbase.tar.gz -C /opt/ && \
+    tar -xf /tmp/hbase.tar.gz -C /opt/ && \
     rm /tmp/hbase.tar.gz* && \
     mv /opt/hbase-${HBASE_VERSION} /opt/hbase && \
     mv /opt/hbase/conf /etc/hbase && \
     mkdir -p /var/log/hbase /var/run/hbase /var/lib/hbase /var/lib/zookeeper && \
     addgroup --system hadoop && \
-    useradd --system --no-create-home --shell=/sbin/nologin --gid hadoop hbase && \
+    useradd --system --no-create-home --shell=/bin/false --gid hadoop hbase && \
     chown hbase:hadoop -R /var/log/hbase /var/run/hbase /var/lib/hbase /var/lib/zookeeper
 
 ENV HBASE_HOME=/opt/hbase \
@@ -46,4 +46,3 @@ WORKDIR ${HBASE_HOME}
 STOPSIGNAL SIGINT
 
 ENTRYPOINT [ "/bin/docker-entrypoint.sh" ]
-CMD [ "/bin/hbase-run-foreground.sh" ]
