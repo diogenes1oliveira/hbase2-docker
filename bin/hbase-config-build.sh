@@ -17,6 +17,9 @@ Options:
 Environment variables:
     \$HBASE_CONF_DIR    path to HBase configuration directory
                        (default: /etc/hbase)
+    \$HBASE_ENV_FILE    path to an optional .env file to be sourced before
+                        building the configuration. Only single-lined values
+                        are supported
     \$HBASE_ROLE        master | regionserver | standalone (default: standalone)
     \$JAVA_HOME         path to a Java installation (default: /usr)
 
@@ -34,6 +37,10 @@ eof
 main() {
     args_parse "$@"
 
+    if [ -n "${HBASE_ENV_FILE:-}" ]; then
+        hbase_dotenv_load "${HBASE_ENV_FILE}"
+    fi
+
     if [ "${NO_DEFAULTS}" != 'true' ]; then
         hbase_set_default_envs
     fi
@@ -44,6 +51,16 @@ main() {
     eval )
         hbase_print_env ;;
     esac
+}
+
+hbase_dotenv_load() {
+    dotenv_file="$1"
+    dotenv_script="$(
+        cd "$(realpath "$(dirname "${SCRIPT}")")"
+        realpath 'dotenv-load.sh'
+    )"
+    # shellcheck disable=SC1090
+    source "${dotenv_script}" "${dotenv_file}"
 }
 
 hbase_set_default_envs() {

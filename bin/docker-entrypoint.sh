@@ -4,6 +4,7 @@ set -euo pipefail
 
 if [ -d /docker-entrypoint-init.d ]; then
     while read -r script; do
+        # shellcheck disable=SC1090
         source "${script}"
     done < <(find /docker-entrypoint-init.d -mindepth 1 -maxdepth 1 -name '*.sh' | sort )
 fi
