@@ -6,4 +6,3 @@
   logging as well, and we could have a HTTP interface to restart processes instead of SSH;
 - Container do TestContainers;
 - Loading a .env file;
-- docker-entrypont init.d
