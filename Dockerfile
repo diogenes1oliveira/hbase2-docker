@@ -18,8 +18,7 @@ LABEL maintainer="Diógenes Oliveira <diogenes1oliveira@gmail.com>" \
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         net-tools=1.60+git20181103.0eebece-1 \
-        netcat=1.10-46 \
-        supervisor=4.2.2-2 && \
+        netcat=1.10-46 && \
     rm -rf /var/lib/apt/lists
 
 ARG HBASE_VERSION
