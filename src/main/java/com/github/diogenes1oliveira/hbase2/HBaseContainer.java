@@ -10,6 +10,9 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Testcontainer for HBase 2
+ */
 public class HBaseContainer extends GenericContainer<HBaseContainer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(HBaseContainer.class);
 
@@ -25,10 +28,16 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
 
     private final Properties properties;
 
+    /**
+     * Uses {@link #DEFAULT_IMAGE}
+     */
     public HBaseContainer() {
         this(DEFAULT_IMAGE);
     }
 
+    /**
+     * Name of the Docker image to be used
+     */
     public HBaseContainer(String image) {
         super(DockerImageName.parse(image));
 
@@ -56,6 +65,9 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         waitingFor(buildStatusWaitStrategy());
     }
 
+    /**
+     * Connection properties to connect to HBase within the container
+     */
     public Properties getProperties() {
         return properties;
     }
