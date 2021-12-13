@@ -1,4 +1,4 @@
-package com.github.diogenes1oliveira.hbase2;
+package io.github.diogenes1oliveira.hbase2;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
