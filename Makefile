@@ -64,8 +64,8 @@ print-image-name:
 # Runs hadolint against the Dockerfile
 .PHONY: lint
 lint:
-	$(DOCKER) run --rm -i hadolint/hadolint < ./Dockerfile
-	$(DOCKER) run --rm -v "$$PWD:/mnt:ro" koalaman/shellcheck:stable $(shell find ./.dev/ ./bin/ -name '*.sh')
+	$(DOCKER) run --rm -i hadolint/hadolint:v2.12.0-alpine < ./Dockerfile
+	$(DOCKER) run --rm -v "$$PWD:/mnt:ro" -e SHELLCHECK_OPTS='-e SC2317' koalaman/shellcheck:v0.9.0 $(shell find ./.dev/ ./bin/ -name '*.sh')
 
 # $ make test
 # Runs the Bats tests
