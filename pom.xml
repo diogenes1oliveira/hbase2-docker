@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.diogenes1oliveira</groupId>
     <artifactId>hbase2-testcontainers</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0</version>
+    <version>0.1.0</version>
     <name>hbase2-testcontainers</name>
     <description>
         Isolated container management for HBase 2 code testing
@@ -72,15 +73,14 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
-            <version>${testcontainers.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-shaded-client</artifactId>
             <version>${hbase.version}</version>
-            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -182,7 +182,8 @@
                                     <goal>sign</goal>
                                 </goals>
                                 <configuration>
-                                    <!-- Prevent gpg from using pinentry programs. Fixes: gpg: signing
+                                    <!-- Prevent gpg from using pinentry programs. Fixes: gpg:
+                                    signing
                                         failed: Inappropriate ioctl for device -->
                                     <gpgArguments>
                                         <arg>--pinentry-mode</arg>
