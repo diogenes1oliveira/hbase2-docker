@@ -59,6 +59,7 @@ hbase_dotenv_load() {
         cd "$(realpath "$(dirname "${SCRIPT}")")"
         realpath 'dotenv-load.sh'
     )"
+
     # shellcheck disable=SC1090
     source "${dotenv_script}" "${dotenv_file}"
 }

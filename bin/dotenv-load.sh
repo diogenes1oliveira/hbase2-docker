@@ -12,7 +12,7 @@ Usage:
     $SCRIPT ENV_FILE
 
 Options:
-    ENV_FILE    path to the .env file. Skipped if not existent
+    ENV_FILE    path to the .env file. Will wait for it to show up if not existing
 
 Obs:
 - Lines beginning with '#' are ignored
@@ -23,8 +23,13 @@ EOF
 main() {
     args_parse "$@"
 
-    if ! [ -r "${ENV_FILE}" ]; then
-        return 0
+
+    if ! [ -e "${ENV_FILE}" ]; then
+        while ! [ -e "${ENV_FILE}" ]; do
+            info ".env file ${ENV_FILE} not found, waiting for 3s"
+            sleep 3
+        done
+        sleep 3
     fi
 
     while read -r line; do
