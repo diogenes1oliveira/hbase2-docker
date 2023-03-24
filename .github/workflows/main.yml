@@ -3,12 +3,16 @@ on:
   push:
     paths-ignore:
       - "**.md"
+      - LICENSE
+      - docker-compose.yml
   pull_request:
     paths-ignore:
       - "**.md"
+      - LICENSE
+      - docker-compose.yml
 
 jobs:
-  docker-image:
+  docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -41,3 +45,67 @@ jobs:
       - name: Push Docker image
         if: github.ref_type == 'tag'
         run: make push
+
+      - id: version
+        uses: nowsprinting/check-version-format-action@v3
+        if: github.ref_type == 'tag'
+        with:
+          prefix: 'v'
+
+      - name: Push latest Docker image
+        if: github.ref_type == 'tag' && steps.version.outputs.is_stable == 'true'
+        run: make push BUILD_VERSION=latest
+
+  java:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      # based on https://bjansen.github.io/java/2021/02/03/deploying-to-maven-central-using-github-actions.html
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: "1.8"
+
+      - name: Compile code
+        run: mvn -B compile
+
+      - name: Run unit tests
+        run: mvn -B test
+
+      - name: Package
+        run: mvn -B package
+      
+      - name: Run integration tests
+        run: mvn -B verify
+
+      - id: version
+        uses: nowsprinting/check-version-format-action@v3
+        if: github.ref_type == 'tag'
+        with:
+          prefix: 'v'
+
+      - name: Fail if tag doesn't match with the one in the pom.xml
+        if: github.ref_type == 'tag'
+        run: test '${{ github.ref_name }}' = $( make maven/version )
+
+      - name: Set up JDK 1.8 with Maven Central
+        uses: actions/setup-java@v1
+        if: github.ref_type == 'tag'
+        with:
+          java-version: "1.8"
+          server-id: ossrh
+          server-username: OSSRH_USERNAME
+          server-password: OSSRH_TOKEN
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Publish to Apache Maven Central
+        if: github.ref_type == 'tag'
+        run: mvn -DskipTests deploy -Dgpg.passphrase=${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}

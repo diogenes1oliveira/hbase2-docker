@@ -17,6 +17,8 @@ export BUILD_VERSION ?= $(VCS_REF)-hbase$(HBASE_VERSION)
 IMAGE_BASENAME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.title < ./Dockerfile )
 # Image complete tag name
 IMAGE_NAME := $(IMAGE_BASENAME):$(BUILD_VERSION)
+IMAGE_LATEST_NAME := $(IMAGE_BASENAME):latest
+
 # Repo base URL and description
 REPO_HOME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.url < ./Dockerfile )
 REPO_DESCRIPTION ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.description < ./Dockerfile )
@@ -26,6 +28,7 @@ export DOCKER ?= docker
 export DOCKER_COMPOSE ?= docker compose
 export CONTAINER_NAME ?= hbase2-docker
 export HBASE_HOME ?= ./var/hbase
+export MAVEN ?= mvn
 
 # $ make build/info
 # Prints the configuration variables
@@ -37,7 +40,6 @@ build/info:
 	@echo "BUILD_VERSION=$(BUILD_VERSION)"
 	@echo "IMAGE_BASENAME=$(IMAGE_BASENAME)"
 	@echo "IMAGE_NAME=$(IMAGE_NAME)"
-	@echo "IMAGE_LATEST_NAME=$(IMAGE_LATEST_NAME)"
 	@echo "REPO_HOME=$(REPO_HOME)"
 	@echo "REPO_DESCRIPTION=$(REPO_DESCRIPTION)"
 
@@ -51,6 +53,7 @@ build:
 		--build-arg VCS_REF \
 		--build-arg BUILD_VERSION \
 		.
+	$(DOCKER) tag $(IMAGE_NAME) $(IMAGE_LATEST_NAME)
 
 # $ make print-image-name
 # Just prints the actual image name
@@ -138,3 +141,13 @@ compose/rm:
 	$(DOCKER_COMPOSE) rm -fsv
 	$(DOCKER) volume prune -f
 	$(DOCKER) network prune -f
+
+# $ make maven/version
+# Prints the version in the root pom.xml
+.PHONY: maven/version
+maven/version:
+	@$(MAVEN) -q \
+		-Dexec.executable=echo \
+		-Dexec.args='$${project.version}' \
+		--non-recursive \
+		exec:exec
