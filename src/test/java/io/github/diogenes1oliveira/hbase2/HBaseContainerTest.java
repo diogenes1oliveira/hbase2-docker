@@ -1,8 +1,10 @@
 package io.github.diogenes1oliveira.hbase2;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Table;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -13,10 +15,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Properties;
 import java.util.UUID;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -25,7 +25,7 @@ class HBaseContainerTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(HBaseContainerTest.class);
 
     @Container
-    public HBaseContainer container = new HBaseContainer();
+    public HBaseContainer container = HBaseContainer.newBuilder().build();
 
     @BeforeEach
     void setUp() {
@@ -34,20 +34,14 @@ class HBaseContainerTest {
 
     @Test
     void shouldBeAbleToCreateTablesViaHBaseApi() throws IOException {
-        ColumnFamilyDescriptor familyDescriptor = ColumnFamilyDescriptorBuilder.of("f");
         TableName tableName = TableName.valueOf("test-table-" + UUID.randomUUID());
-        TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(tableName)
-                .setColumnFamilies(singletonList(familyDescriptor))
-                .build();
+        container.createTable(tableName, new byte[]{'f'});
 
-        Configuration config = createConfig(container.getProperties());
-
-        try (Connection connection = ConnectionFactory.createConnection(config); Admin admin = connection.getAdmin()) {
-            admin.createTable(tableDescriptor);
-            testTablePutAndGet(connection, tableName);
+        container.doWithRetry((connection, _admin) -> testTablePutAndGet(connection, tableName));
+        container.doWithRetry((_connection, admin) -> {
             admin.disableTable(tableName);
             admin.deleteTable(tableName);
-        }
+        });
     }
 
     private void testTablePutAndGet(Connection connection, TableName tableName) throws IOException {
@@ -73,14 +67,4 @@ class HBaseContainerTest {
 
     }
 
-    private static Configuration createConfig(Properties props) {
-        Configuration config = new Configuration();
-
-        for (String name : props.stringPropertyNames()) {
-            String value = props.getProperty(name);
-            config.set(name, value);
-        }
-
-        return config;
-    }
 }

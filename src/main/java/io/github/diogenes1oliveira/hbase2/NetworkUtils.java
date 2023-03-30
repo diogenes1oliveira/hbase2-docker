@@ -1,32 +1,31 @@
 package io.github.diogenes1oliveira.hbase2;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.util.Set;
 
-public class NetworkUtils {
+public final class NetworkUtils {
     private NetworkUtils() {
         // utility class
     }
 
     public static int getAvailablePort() {
-        try {
-            ServerSocket socket = new ServerSocket(0);
+        try (ServerSocket socket = new ServerSocket(0)) {
             socket.setReuseAddress(true);
-            int port = socket.getLocalPort();
-            socket.close();
-            return port;
+            return socket.getLocalPort();
         } catch (IOException e) {
-            throw new RuntimeException("No port available");
+            throw new UncheckedIOException("Failed to get free port", e);
         }
     }
 
-    public static int getAvailablePort(Set<Integer> excludedSet) {
+    public static int allocateAnotherPort(Set<Integer> allocatedPorts) {
         int port;
         do {
             port = getAvailablePort();
-        } while (excludedSet.contains(port));
+        } while (allocatedPorts.contains(port));
 
+        allocatedPorts.add(port);
         return port;
     }
 
