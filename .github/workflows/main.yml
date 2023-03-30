@@ -94,7 +94,7 @@ jobs:
 
       - name: Publish to Apache Maven Central
         if: github.ref_type == 'tag'
-        run: mvn --batch-mode -DskipTests deploy -Dgpg.passphrase=${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: mvn --batch-mode -DskipTests -Dgpg.passphrase=${{ secrets.MAVEN_GPG_PASSPHRASE }} -Pdeploy deploy
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
