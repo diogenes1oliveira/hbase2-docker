@@ -32,9 +32,9 @@ jobs:
         with:
           prefix: 'v'
 
-#      - name: Fail if tag doesn't match with the one in the pom.xml
-#        if: github.ref_type == 'tag'
-#        run: test '${{ github.ref_name }}' = $( make maven/version )
+      - name: Fail if tag doesn't match with the one in the pom.xml
+        if: github.ref_type == 'tag'
+        run: test '${{ github.ref_name }}' = $( make maven/version )
 
       - name: Set VCS_REF and BUILD_DATE
         run: |
@@ -42,43 +42,43 @@ jobs:
           echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> .env
           make -s build/info
 
-#      - name: Login to Docker Hub
-#        if: github.ref_type == 'tag'
-#        uses: docker/login-action@v1
-#        with:
-#          username: ${{ secrets.DOCKERHUB_USERNAME }}
-#          password: ${{ secrets.DOCKERHUB_TOKEN }}
-#
-#      - name: Lint scripts and Dockerfile
-#        run: make lint
-#
-#      - name: Build the Docker image
-#        run: make build
-#
-#      - name: Run tests
-#        run: make test
-#
-#      - name: Push Docker image
-#        if: github.ref_type == 'tag'
-#        run: make push
-#
-#      - name: Push latest Docker image
-#        if: github.ref_type == 'tag' && steps.version.outputs.is_stable == 'true'
-#        run: make push BUILD_VERSION=latest
+      - name: Lint scripts and Dockerfile
+        run: make lint
+
+      - name: Build the Docker image
+        run: make build
+
+      - name: Run tests
+        run: make test
+
+      - name: Login to Docker Hub
+        if: github.ref_type == 'tag'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker image
+        if: github.ref_type == 'tag'
+        run: make push
+
+      - name: Push latest Docker image
+        if: github.ref_type == 'tag' && steps.version.outputs.is_stable == 'true'
+        run: make push BUILD_VERSION=latest
 
       # based on https://bjansen.github.io/java/2021/02/03/deploying-to-maven-central-using-github-actions.html
 
       - name: Compile code
         run: mvn -B compile -DskipTests=true
 
-#      - name: Run unit tests
-#        run: mvn -B test
+      - name: Run unit tests
+        run: mvn -B test
 
       - name: Package
         run: mvn -B package -DskipTests=true
       
-#      - name: Run integration tests
-#        run: mvn -B verify
+      - name: Run integration tests
+        run: mvn -B verify
 
       - name: Set up JDK 1.8 with Maven Central
         uses: actions/setup-java@v3
