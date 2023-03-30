@@ -32,6 +32,10 @@ jobs:
         with:
           prefix: 'v'
 
+      - name: Allow 0.x to be stable
+        run: |
+          echo is_stable=${{ (steps.version.outputs.is_valid && steps.version.outputs.prerelease == '') && 'true' || 'false' }} >> $GITHUB_ENV
+
       - name: Fail if tag doesn't match with the one in the pom.xml
         if: github.ref_type == 'tag'
         run: test '${{ github.ref_name }}' = $( make maven/version )
@@ -63,7 +67,7 @@ jobs:
         run: make push
 
       - name: Push latest Docker image
-        if: github.ref_type == 'tag' && steps.version.outputs.is_stable == 'true'
+        if: github.ref_type == 'tag' && env.is_stable == 'true'
         run: make push BUILD_VERSION=latest
 
       # based on https://bjansen.github.io/java/2021/02/03/deploying-to-maven-central-using-github-actions.html
@@ -94,7 +98,7 @@ jobs:
 
       - name: Publish to Apache Maven Central
         if: github.ref_type == 'tag'
-        run: mvn --batch-mode -DskipTests -Dgpg.passphrase=${{ secrets.MAVEN_GPG_PASSPHRASE }} -Pdeploy deploy
+        run: mvn --batch-mode -DskipTests -DautoReleaseAfterClose=${{ env.is_stable }} -Dgpg.passphrase=${{ secrets.MAVEN_GPG_PASSPHRASE }} -Pdeploy deploy
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}

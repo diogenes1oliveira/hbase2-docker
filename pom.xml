@@ -56,6 +56,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.mainClass>io.github.diogenes1oliveira.hbase2.HBaseContainer</project.mainClass>
+        <autoReleaseAfterClose>false</autoReleaseAfterClose>
 
         <!-- dependency versions -->
         <testcontainers.version>1.16.2</testcontainers.version>
@@ -168,7 +169,7 @@
                         <configuration>
                             <serverId>ossrh</serverId>
                             <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                            <autoReleaseAfterClose>${autoReleaseAfterClose}</autoReleaseAfterClose>
                         </configuration>
                     </plugin>
                     <plugin>
