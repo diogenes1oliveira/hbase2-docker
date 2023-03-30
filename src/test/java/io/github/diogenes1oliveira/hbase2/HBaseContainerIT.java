@@ -21,8 +21,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Testcontainers
-class HBaseContainerTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HBaseContainerTest.class);
+class HBaseContainerIT {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HBaseContainerIT.class);
 
     @Container
     public HBaseContainer container = HBaseContainer.newBuilder().build();
