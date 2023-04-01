@@ -26,7 +26,7 @@ main() {
 
     if ! [ -e "${ENV_FILE}" ]; then
         while ! [ -e "${ENV_FILE}" ]; do
-            info ".env file ${ENV_FILE} not found, waiting for 3s"
+            echo >&2 ".env file ${ENV_FILE} not found, waiting for 3s"
             sleep 3
         done
         sleep 3

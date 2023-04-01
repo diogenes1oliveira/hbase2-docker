@@ -248,7 +248,9 @@ public class HBaseContainer extends FixedHostPortGenericContainer<HBaseContainer
         String envContents = asEnvContents(env);
         byte[] envBytes = envContents.getBytes(UTF_8);
 
+        LOGGER.info("copying .env to container");
         copyFileToContainer(Transferable.of(envBytes), ENV_DOTENV_VALUE);
+        LOGGER.info(".env copied");
     }
 
     private WaitStrategy buildStatusWaitStrategy() {
@@ -260,6 +262,7 @@ public class HBaseContainer extends FixedHostPortGenericContainer<HBaseContainer
 
                 while (true) {
                     try {
+                        LOGGER.info("checking HBase status");
                         if (execInContainer("/bin/hbase-shell-run.sh", "status").getExitCode() == 0) {
                             break;
                         }
