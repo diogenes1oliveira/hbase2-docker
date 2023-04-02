@@ -46,7 +46,7 @@ jobs:
       - name: Replace the default image version
         run: |
           set -e
-          sed -i "s/:latest/:$BUILD_VERSION/g" ./src/main/resources/hbase2-docker.properties
+          sed -i "s/:latest/:$IMAGE_TAG/g" ./src/main/resources/hbase2-docker.properties
           grep default-image ./src/main/resources/hbase2-docker.properties | sed 's/^/> /g'
 
       - name: Install and run tests
