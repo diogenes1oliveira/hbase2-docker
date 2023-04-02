@@ -4,18 +4,18 @@
 -include .env
 
 # Don't forget to set BUILD_DATE accordingly in your CI command
-export HBASE_VERSION ?= $(shell .dev/dockerfile-get.sh ARG=HBASE_VERSION)
+export HBASE_VERSION ?= $(shell .dev/dockerfile-get.sh ARG=HBASE_VERSION < Dockerfile)
 export BUILD_DATE ?= 1970-01-01T00:00:00Z
-export BUILD_VERSION ?= $(shell .dev/maven-get-version.sh)
-BUILD_IS_STABLE := $(shell .dev/build-get-stable.sh)
+export BUILD_VERSION ?= $(shell .dev/maven-get-version.sh < pom.xml)
+BUILD_IS_STABLE := $(shell .dev/build-get-stable.sh < pom.xml)
 
 export IMAGE_TAG ?= $(BUILD_VERSION)-hbase$(HBASE_VERSION)
-IMAGE_REPO ?= $(shell .dev/dockerfile-get.sh LABEL=org.opencontainers.image.title)
+IMAGE_REPO ?= $(shell .dev/dockerfile-get.sh LABEL=org.opencontainers.image.title < Dockerfile)
 export IMAGE_NAME := $(IMAGE_REPO):$(IMAGE_TAG)
 
 # Repo base URL and description
-REPO_HOME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.url)
-REPO_DESCRIPTION ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.description)
+REPO_HOME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.url < Dockerfile)
+REPO_DESCRIPTION ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.description < Dockerfile)
 
 export DOCKER ?= docker
 export DOCKER_COMPOSE ?= docker compose
@@ -121,12 +121,6 @@ readme/absolutize:
 readme/push: readme/absolutize
 	@read -r -p "transformed README is available in ./var. Push to Docker Hub? " answer; [ "$${answer}" = 'yes' ]
 	@$(DOCKER) pushrm "$(IMAGE_REPO)" --file ./var/README.docker.md --short "$(REPO_DESCRIPTION)"
-
-# $ make docker/get LABEL=some-label-name
-# $ make docker/get ENV=some-env-name
-.PHONY: docker/get
-docker/get:
-	@./.dev/dockerfile-get.sh < ./Dockerfile
 
 # $ make compose/up
 # Starts a Hadoop/HBase cluster via docker-compose

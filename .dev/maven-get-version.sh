@@ -1,3 +1,3 @@
 #!/bin/sh
 
-grep -F '<version>' pom.xml | tr -d '[:space:]' | tr '<>/' '|' | cut -d'|' -f 3
+grep -F '<version>' | tr -d '[:space:]' | tr '<>/' '|' | cut -d'|' -f 3

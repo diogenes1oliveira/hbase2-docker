@@ -23,17 +23,6 @@ setup() {
     assert_output "someone else"
 }
 
-@test "works with environment variables" {
-    export ENV=
-    export LABEL=maintainer
-    run ./.dev/dockerfile-get.sh <<<'
-    LABEL foo=bar \
-        maintainer="someone else"'
-
-    assert_success
-    assert_output "someone else"
-}
-
 @test "fails when not found" {
     run ./.dev/dockerfile-get.sh LABEL=maintainer <<<'LABEL foo=bar'
 
