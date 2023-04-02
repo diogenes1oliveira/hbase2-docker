@@ -54,6 +54,12 @@ jobs:
           java-version: 8.0.362+9
           distribution: adopt
 
+      - name: Replace the default image version
+        run: |
+          set -e
+          sed -i "s/:latest/:$BUILD_VERSION/g" ./src/main/resources/hbase2-docker.properties
+          grep default-image ./src/main/resources/hbase2-docker.properties | sed 's/^/> /g'
+
       - name: Compile code
         run: mvn -B compile -DskipTests=true
 
