@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+SCRIPT="${BASH_SOURCE[0]:-$0}"
+
+usage() {
+    cat <<EOF
+Loads environment variables from a .env file
+
+Usage:
+    source $SCRIPT ENV_FILE
+
+Options:
+    ENV_FILE    path to the .env file
+
+Obs:
+- Lines beginning with '#' are ignored
+- Only single-lined variables are supported
+EOF
+}
+
+main() {
+    while read -r line; do
+        if [[ "${line}" =~ ^([a-zA-Z0-9_]+)=(.*)$ ]]; then
+            name="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+            export "$name=$value"
+        fi
+    done < <( env_get_lines )
+}
+
+env_get_lines() {
+    < "$ENV_FILE" sed -e '/^\s\+$/d' | sed -e '/^\s*#.*/d'
+}
+
+for arg in "$@"; do
+    case "$arg" in
+    -h | --help )
+        usage && return 0 ;;
+    esac
+done
+
+ENV_FILE="${1:-}"
+
+if [ -z "$ENV_FILE" ]; then
+    usage >&2
+    echo >&2 ""
+    echo >&2 "ERROR: no ENV_FILE specified"
+    return 1
+fi
+
+
+main

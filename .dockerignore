@@ -1,3 +1,5 @@
 *
 !Dockerfile
 !/bin
+!/conf
+!/docker-entrypoint.sh

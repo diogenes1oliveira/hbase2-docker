@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+if [ "${HBASE_HEALTHCHECK_ENABLED:-}" != 'true' ]; then
+    echo >&2 "health check is disabled"
+    echo UP
+    exit 0
+fi
+
+output="$(echo 'status' | "$HBASE_HOME/bin/hbase" shell -n 2>&1)"
+exit_code="$?"
+
+if [ "$exit_code" -eq 0 ] && grep -q '0 dead' <<<"$output"; then
+    echo UP
+    exit 0
+fi
+
+echo >&2 "$output"
+echo DOWN
+exit "$exit_code"

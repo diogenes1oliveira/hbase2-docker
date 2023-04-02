@@ -3,26 +3,18 @@
 
 -include .env
 
-# Quasi-mandatory args. When building locally
-# HBase version
-export HBASE_VERSION ?= 2.0.2
-# Current UTC timestamp
+# Don't forget to set at least BUILD_DATE and BUILD_VERSION accordingly
+export HBASE_VERSION ?= $(shell .dev/dockerfile-get.sh ARG=HBASE_VERSION < ./Dockerfile )
 export BUILD_DATE ?= 1970-01-01T00:00:00Z
-# Git tag, commit ID or branch
-export VCS_REF ?= 1.0.0
-# Image tag
-export BUILD_VERSION ?= $(VCS_REF)-hbase$(HBASE_VERSION)
+export BUILD_VERSION ?= 0.0.1
 
-# Image basename
-IMAGE_BASENAME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.title < ./Dockerfile )
-# Image complete tag name
-IMAGE_NAME := $(IMAGE_BASENAME):$(BUILD_VERSION)
-IMAGE_LATEST_NAME := $(IMAGE_BASENAME):latest
+export IMAGE_TAG ?= $(BUILD_VERSION)-hbase$(HBASE_VERSION)
+IMAGE_REPO ?= $(shell .dev/dockerfile-get.sh LABEL=org.opencontainers.image.title < ./Dockerfile )
+IMAGE_NAME := $(IMAGE_REPO):$(IMAGE_TAG)
 
 # Repo base URL and description
 REPO_HOME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.url < ./Dockerfile )
 REPO_DESCRIPTION ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.description < ./Dockerfile )
-# Name of the standalone container
 
 export DOCKER ?= docker
 export DOCKER_COMPOSE ?= docker compose
@@ -36,9 +28,9 @@ export MAVEN ?= mvn
 build/info:
 	@echo "HBASE_VERSION=$(HBASE_VERSION)"
 	@echo "BUILD_DATE=$(BUILD_DATE)"
-	@echo "VCS_REF=$(VCS_REF)"
 	@echo "BUILD_VERSION=$(BUILD_VERSION)"
-	@echo "IMAGE_BASENAME=$(IMAGE_BASENAME)"
+	@echo "IMAGE_TAG=$(IMAGE_TAG)"
+	@echo "IMAGE_REPO=$(IMAGE_REPO)"
 	@echo "IMAGE_NAME=$(IMAGE_NAME)"
 	@echo "REPO_HOME=$(REPO_HOME)"
 	@echo "REPO_DESCRIPTION=$(REPO_DESCRIPTION)"
@@ -50,10 +42,25 @@ build:
 	$(DOCKER) build -t $(IMAGE_NAME) \
 		--build-arg HBASE_VERSION \
 		--build-arg BUILD_DATE \
-		--build-arg VCS_REF \
 		--build-arg BUILD_VERSION \
+		--build-arg IMAGE_TAG \
 		.
-	$(DOCKER) tag $(IMAGE_NAME) $(IMAGE_LATEST_NAME)
+	$(DOCKER) tag $(IMAGE_NAME) $(IMAGE_REPO):latest
+
+# $ make run
+# Starts a Docker container
+.PHONY: run
+run:
+	$(DOCKER) run --rm -d --name hbase2-docker \
+		-p 2181:2181 -p 16000:16000 -p 16010:16010 -p 16020:16020 -p 10630:16030 \
+		$(IMAGE_NAME)
+	$(DOCKER) logs -f hbase2-docker
+
+# $ make rm
+# Removes the Docker container
+.PHONY: rm
+rm:
+	$(DOCKER) rm -f hbase2-docker
 
 # $ make print-image-name
 # Just prints the actual image name
@@ -73,7 +80,7 @@ lint:
 .PHONY: test
 test:
 	@./test/bats/bin/bats test/.dev
-	@./test/bats/bin/bats test/bin
+	@test/bats/bin/bats test/bin
 
 # $ make push
 # Pushes the built image to the repository
@@ -93,25 +100,7 @@ readme/absolutize:
 .PHONY: readme/push
 readme/push: readme/absolutize
 	@read -r -p "transformed README is available in ./var. Push to Docker Hub? " answer; [ "$${answer}" = 'yes' ]
-	@$(DOCKER) pushrm "$(IMAGE_BASENAME)" --file ./var/README.docker.md --short "$(REPO_DESCRIPTION)"
-
-# $ make start
-# Starts a single container with HBase standalone
-.PHONY: start
-start:
-	@./.dev/hbase-start.sh
-
-# $ make stop
-# Stop and removes the container started by $ make run
-.PHONY: stop
-stop:
-	@./.dev/hbase-stop.sh
-
-# $ make kill
-# Kills and removes the container started by $ make run
-.PHONY: kill
-kill:
-	@./.dev/hbase-stop.sh --kill
+	@$(DOCKER) pushrm "$(IMAGE_REPO)" --file ./var/README.docker.md --short "$(REPO_DESCRIPTION)"
 
 # $ make docker/get LABEL=some-label-name
 # $ make docker/get ENV=some-env-name

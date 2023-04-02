@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+SCRIPT="${BASH_SOURCE[0]:-$0}"
+
+set -euo pipefail
+
+usage() {
+    cat <<eof
+Prints a hbase-site.xml based on the environment variables
+
+Usage:
+    $SCRIPT PREFIX
+
+Options:
+    PREFIX  only consider variables starting with this value
+
+
+This script maps environment variables with the prefix HBASE_CONF_ by removing
+the prefix and replacing dots by underscores:
+
+<!-- PREFIX_some_config=value -->
+<property>
+    <name>some.config</name>
+    <value>value</value>
+</property>
+eof
+}
+
+PREFIX=
+
+main() {
+    print_header
+
+    for env_name in $( awk 'BEGIN{for(v in ENVIRON) print v}' ); do
+        config_name="${env_name#"$PREFIX"}"
+        if [ "$config_name" = "$env_name" ]; then
+            continue
+        fi
+
+        print_env_xml "$config_name" "${!env_name}"
+    done
+
+    print_footer
+}
+
+print_header() {
+    cat <<eof
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!-- generated from environment variables with $SCRIPT -->
+<configuration>
+
+eof
+}
+
+print_env_xml() {
+    name="$1"
+    value="$2"
+
+    property="${name//_/.}"
+    property="${property//.../_}"
+    property="${property//../-}"
+
+    cat <<eof
+    <property>
+        <name>$property</name>
+        <value>$value</value>
+    </property>
+eof
+}
+
+print_footer() {
+    cat <<eof
+
+</configuration>
+eof
+}
+
+for arg in "$@"; do
+    case "$arg" in
+    -h | --help )
+        usage && exit 0 ;;
+    esac
+done
+
+PREFIX="${1:-}"
+
+if [ -z "$PREFIX" ]; then
+    echo >&2 "ERROR: no environment prefix specified"
+    exit 1
+fi
+
+main

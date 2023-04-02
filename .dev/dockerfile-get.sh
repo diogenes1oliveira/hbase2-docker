@@ -4,15 +4,16 @@ SCRIPT="$0"
 
 usage() {
     cat <<eof
-Extracts the value of a LABEL or ENV declared in a Dockerfile
+Extracts the value of a LABEL, ENV or ARG declared in a Dockerfile
 
 Obs: this will NOT handle weird cases, such as when there is a escape inside
 the label value, the label name occurs inside another label value, etc...
 
 Usage:
-    ${SCRIPT} LABEL=<NAME> | ENV=<NAME>
-    LABEL=<NAME> ${SCRIPT}
-    ENV=<NAME> ${SCRIPT}
+    $SCRIPT LABEL=l | ENV=e | ARG=a | < Dockerfile
+    LABEL=l $SCRIPT < Dockerfile
+    ENV=e $SCRIPT < Dockerfile
+    ARG=a $SCRIPT < Dockerfile
 eof
 }
 
@@ -20,9 +21,10 @@ TYPE=
 NAME=
 
 main() {
-    # Merge escaped continuation lines, remove trailing spaces and get
-    # just the LABEL instructions
+    # Delete comments, merge escaped continuation lines, remove trailing spaces
+    # and get just the LABEL instructions
     readarray -t lines < <(
+        grep -v '^\s*#' | \
         sed -z 's/\\\n/ /g' | \
         sed -E 's/^\s+//g' | \
         grep "^${TYPE}" | \
@@ -50,18 +52,27 @@ match_pattern() {
 if [[ "${1:-}" =~ ^-h|--help$ ]]; then
     usage
     exit 0
-elif [[ "${1:-}" =~ ^(ENV|LABEL)=(.+) ]]; then
+fi
+
+if [[ "${1:-}" =~ ^(ENV|LABEL|ARG)=(.+) ]]; then
     TYPE="${BASH_REMATCH[1]}"
     NAME="${BASH_REMATCH[2]}"
-elif [ -n "${ENV:-}" ] && [ -z "${LABEL:-}" ]; then
-    TYPE=ENV
-    NAME="${ENV}"
-elif [ -z "${ENV:-}" ] && [ -n "${LABEL:-}" ]; then
-    TYPE=LABEL
-    NAME="${LABEL}"
 else
-    echo >&2 "ERROR: exactly one of ENV= or LABEL= must be set"
-    exit 1
+    count=0
+    TYPE=
+
+    for t in ENV LABEL ARG; do
+        NAME="${!t:-}"
+        if [ -n "$NAME" ]; then
+            TYPE="$t"
+            count="$(( count + 1 ))"
+        fi
+    done
+
+    if [ "$count" -ne 1 ]; then
+        echo >&2 "ERROR: exactly one of ENV= or LABEL= or ARG= must be set"
+        exit 1
+    fi
 fi
 
 main

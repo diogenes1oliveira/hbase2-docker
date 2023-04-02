@@ -22,7 +22,7 @@ VAR3
     unset VAR3
 
     (
-        source ./bin/dotenv-load.sh <( printf '%s' "${dotenv}" )
+        source ./bin/dotenv-load <( printf '%s' "${dotenv}" )
         assert_equal "${VAR1:-}" '1'
         assert_equal "${VAR2:-}" '2'
         assert_equal "${VAR3:-}" ''
