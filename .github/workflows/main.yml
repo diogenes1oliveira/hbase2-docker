@@ -22,7 +22,8 @@ jobs:
 
       - name: Freezes the build environment variables
         run: |
-          export BUILD_DATE="$( date -u '%Y-%m-%dT:%H:%M:%SZ' )"
+          set -e
+          export BUILD_DATE="$( date -u '+%Y-%m-%dT:%H:%M:%S.%NZ' )"
           make -s build/info | tee -a $GITHUB_ENV
 
       - name: Lint scripts and Dockerfile
