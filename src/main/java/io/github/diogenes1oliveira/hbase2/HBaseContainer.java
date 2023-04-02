@@ -43,8 +43,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     public static final String ENV_HOSTNAME_REGIONSERVER = "HBASE_SITE_hbase_regionserver_hostname";
     public static final String ENV_PORT_MAPPINGS = "HBASE_PORT_MAPPINGS";
     public static final String RESOURCE_CONFIG = "hbase2-docker.properties";
-    public static final String PROP_DEFAULT_IMAGE = "hbase2-docker.default-image";
-    public static final String PROPS_DEFAULT_TIMEOUT = "hbase2-docker.default-timeout";
+    public static final String PROP_PREFIX = "hbase2-docker.";
 
     public static final Map<String, Integer> DEFAULT_PORTS = new HashMap<String, Integer>() {{
         put(ENV_PORT_ZOOKEEPER, 2181);
@@ -55,18 +54,25 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     }};
     private final Properties properties;
     private final long timeoutNs;
+    private final boolean debug;
 
     /**
      * Name of the Docker image to be used
      */
     @SuppressWarnings({"resource"})
-    public HBaseContainer(String image, Duration timeout, Properties props) {
+    public HBaseContainer(String image, Duration timeout, boolean debug, Properties props) {
         super(image);
 
         withEnv(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
 
         this.timeoutNs = timeout.toNanos();
         this.properties = props;
+        this.debug = debug;
+
+        LOGGER.info("Starting container against image={} with timeout={} and debug={}", image, timeout, debug);
+        if (debug) {
+            LOGGER.info("Container properties: {}", props);
+        }
 
         withStartupTimeout(timeout);
         withExposedPorts(DEFAULT_PORTS.values().toArray(new Integer[0]));
@@ -97,6 +103,9 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         properties.setProperty("hbase.zookeeper.quorum", containerIp + ":" + env.get(ENV_PORT_ZOOKEEPER));
 
         String envContents = asEnvContents(env);
+        if (debug) {
+            LOGGER.info("Generated .env:\n{}", envContents);
+        }
         byte[] envBytes = envContents.getBytes(UTF_8);
 
         LOGGER.info("copying .env to container");
@@ -256,15 +265,32 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         }
     }
 
+    public static Properties getHBase2DockerSystemProps() {
+        Properties props = new Properties();
+        Properties systemProps = System.getProperties();
+
+        for (String name : systemProps.stringPropertyNames()) {
+            if (name.startsWith(PROP_PREFIX)) {
+                props.setProperty(name, systemProps.getProperty(name));
+            }
+        }
+
+        return props;
+    }
+
     public static class Builder {
         private String image;
         private Duration timeout;
+        private boolean debug;
         private Properties props;
 
         public Builder() {
             this.props = getDefaultProps();
-            this.image = (String) this.props.remove(PROP_DEFAULT_IMAGE);
-            this.timeout = Duration.parse((String) this.props.remove(PROPS_DEFAULT_TIMEOUT));
+            this.props.putAll(getHBase2DockerSystemProps());
+
+            this.image = (String) this.props.remove(PROP_PREFIX + "image");
+            this.timeout = Duration.parse((String) this.props.remove(PROP_PREFIX + "timeout"));
+            this.debug = Boolean.parseBoolean((String) this.props.remove(PROP_PREFIX + "debug"));
         }
 
         public Builder image(String image) {
@@ -282,8 +308,13 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
             return this;
         }
 
+        public Builder debug(boolean debug) {
+            this.debug = debug;
+            return this;
+        }
+
         public HBaseContainer build() {
-            return new HBaseContainer(image, timeout, props);
+            return new HBaseContainer(image, timeout, debug, props);
         }
     }
 

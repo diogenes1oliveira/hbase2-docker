@@ -47,7 +47,7 @@ jobs:
         run: |
           set -e
           sed -i "s/:latest/:$IMAGE_TAG/g" ./src/main/resources/hbase2-docker.properties
-          grep default-image ./src/main/resources/hbase2-docker.properties | sed 's/^/> /g'
+          grep hbase2-docker.image ./src/main/resources/hbase2-docker.properties | sed 's/^/> /g'
 
       - name: Install and run tests
         run: mvn -B install
