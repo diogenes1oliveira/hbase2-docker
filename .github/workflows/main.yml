@@ -49,17 +49,8 @@ jobs:
           sed -i "s/:latest/:$BUILD_VERSION/g" ./src/main/resources/hbase2-docker.properties
           grep default-image ./src/main/resources/hbase2-docker.properties | sed 's/^/> /g'
 
-      - name: Compile code
-        run: mvn -B compile -DskipTests=true
-
-      - name: Run unit tests
-        run: mvn -B test
-
-      - name: Package
-        run: mvn -B package -DskipTests=true
-      
-      - name: Run integration tests
-        run: mvn -B verify
+      - name: Install and run tests
+        run: mvn -B install
 
       - name: Login to Docker Hub
         if: env.BUILD_IS_STABLE == 'true'
