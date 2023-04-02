@@ -17,17 +17,22 @@ if [ -n "${HBASE_ENV_FILE:-}" ]; then
     source dotenv-load "$HBASE_ENV_FILE"
 fi
 
+
 HBASE_SITE_PATH="${HBASE_CONF_DIR:-}/hbase-site.xml"
+
 if ! [ -e "$HBASE_SITE_PATH" ] && [ -d "${HBASE_CONF_DIR:-}" ]; then
     echo >&2 "INFO: generating hbase-site.xml from environment variables"
     hbase-xml-from-env HBASE_SITE_ > "$HBASE_SITE_PATH"
 fi
 
+
 HBASE_POLICY_PATH="${HBASE_CONF_DIR:-}/hbase-policy.xml"
+
 if ! [ -e "$HBASE_POLICY_PATH" ] && [ -d "${HBASE_CONF_DIR:-}" ]; then
     echo >&2 "INFO: generating hbase-policy.xml from environment variables"
     hbase-xml-from-env HBASE_POLICY_ > "$HBASE_POLICY_PATH"
 fi
+
 
 if [ -d /docker-entrypoint-init.d ]; then
     echo >&2 "INFO: finding initialization scripts"
@@ -37,6 +42,11 @@ if [ -d /docker-entrypoint-init.d ]; then
         # shellcheck disable=SC1090
         source "$script"
     done < <(find /docker-entrypoint-init.d -mindepth 1 -maxdepth 1 -name '*.sh' | sort )
+fi
+
+if [ -n "${HBASE_PORT_MAPPINGS:-}" ]; then
+    echo >&2 "INFO: mapping ports $HBASE_PORT_MAPPINGS"
+    tcp-map-ports "$HBASE_PORT_MAPPINGS"
 fi
 
 if [ -n "${HBASE_RUN_AS:-}" ]; then

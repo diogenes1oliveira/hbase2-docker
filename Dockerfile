@@ -41,6 +41,7 @@ ENV HBASE_MANAGES_ZK=true \
     HBASE_RUN_AS=hbase \
     HBASE_ENV_FILE= \
     HBASE_HEALTHCHECK_ENABLED=true \
+    HBASE_PORT_MAPPINGS= \
     HBASE_SECURITY_LOGGER=INFO,console \
     # core settings
     HBASE_SITE_hbase_cluster_distributed=false \
@@ -82,7 +83,7 @@ WORKDIR "$HBASE_HOME"
 STOPSIGNAL SIGINT
 
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
-CMD [ "/bin/sh", "-c", "exec bin/hbase \"$HBASE_COMMAND\" start" ]
+CMD [ "/bin/sh", "-c", "exec \"$HBASE_HOME/bin/hbase\" \"$HBASE_COMMAND\" start" ]
 HEALTHCHECK --interval=20s --timeout=10s --start-period=30s --retries=3 CMD [ "hbase-health-check" ]
 
 ARG BUILD_DATE

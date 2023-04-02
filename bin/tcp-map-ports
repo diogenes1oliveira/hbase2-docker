@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+
+SCRIPT="${BASH_SOURCE[0]:-$0}"
+set -euo pipefail
+
+usage() {
+    cat <<eof
+Uses socat to remap a set of ports locally.
+
+Usage:
+    $SCRIPT [--check] LISTEN1:TARGET1 [ LISTEN2:TARGET2 ... ]
+    $SCRIPT [--check] 'LISTEN1:TARGET1,LISTEN2:TARGET2,...'
+    $SCRIPT [--check] 'LISTEN1:TARGET1 LISTEN2:TARGET2,...'
+
+Options:
+    -h, --help   this help
+    --check      just check if there's a process listening
+eof
+}
+
+CHECK=false
+PORT_SPECS=()
+
+main() {
+    for spec in "${PORT_SPECS[@]}"; do
+        IFS=: read -r listen_port target_port <<<"$spec"
+
+        if [ "$CHECK" = 'true' ]; then
+            if ! netstat -ltpn | grep -q ":$listen_port "; then
+                echo >&2 "ERROR: nothing listening on pair $spec"
+                exit 1
+            else
+                echo >&2 "OK: $spec"
+            fi
+        else
+            nohup socat -d "TCP-LISTEN:$listen_port,fork" "TCP:localhost:$target_port" &
+            pid="$!"
+            echo >&2 "INFO: forwarding TCP port $listen_port to port $target_port on localhost (pid: $pid)"
+        fi
+    done
+}
+
+if ! ARGS="$(getopt -o 'h' --long 'help,check' -- "$@")"; then
+    usage >&2
+    exit 1
+fi
+
+eval set -- "$ARGS"
+
+while true; do
+    case "$1" in
+    -h | --help )
+        usage
+        exit 0
+        ;;
+    --check )
+        CHECK=true
+        shift
+        ;;
+    -- )
+        shift
+        break
+        ;;
+    * )
+        usage >&2
+        echo >&2
+        echo >&2 "ERROR: unrecognized argument $1"
+        exit 1
+        ;;
+    esac
+done
+
+IFS=' ' read -ra PORT_SPECS <<<"${*//,/ }"
+
+if [[ "${#PORT_SPECS[@]}" -eq 0 ]]; then
+    echo >&2 "ERROR: no port specified"
+    exit 1
+fi
+
+for spec in "${PORT_SPECS[@]}"; do
+    if [[ ! "$spec" =~ ^([0-9]+):([0-9]+)$ ]]; then
+        echo >&2 "ERROR: bad port spec '$spec'"
+        exit 1
+    fi
+done
+
+main
