@@ -10,7 +10,7 @@ export BUILD_VERSION ?= $(shell .dev/maven-get-version.sh)
 
 export IMAGE_TAG ?= $(BUILD_VERSION)-hbase$(HBASE_VERSION)
 IMAGE_REPO ?= $(shell .dev/dockerfile-get.sh LABEL=org.opencontainers.image.title)
-IMAGE_NAME := $(IMAGE_REPO):$(IMAGE_TAG)
+export IMAGE_NAME := $(IMAGE_REPO):$(IMAGE_TAG)
 
 # Repo base URL and description
 REPO_HOME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.url)
@@ -94,6 +94,18 @@ test:
 push:
 	@$(DOCKER) push $(IMAGE_NAME)
 
+# $ make hbase/extract
+# Extracts the hbase folder contents into ./var
+.PHONY: hbase/extract
+hbase/extract:
+	@.dev/hbase-extract.sh
+
+# $ make hbase/shell
+# Runs the local hbase shell from ./var/hbase/bin
+.PHONY: hbase/shell
+hbase/shell:
+	@var/hbase/bin/hbase shell
+
 # $ make readme/absolutize
 # Absolutizes the README.md file links
 .PHONY: readme/absolutize
@@ -113,14 +125,6 @@ readme/push: readme/absolutize
 .PHONY: docker/get
 docker/get:
 	@./.dev/dockerfile-get.sh < ./Dockerfile
-
-.PHONY: hbase/extract
-hbase/extract:
-	@./.dev/hbase-extract.sh
-
-.PHONY: shell
-shell:
-	@./.dev/hbase-extract.sh
 
 # $ make compose/up
 # Starts a Hadoop/HBase cluster via docker-compose
