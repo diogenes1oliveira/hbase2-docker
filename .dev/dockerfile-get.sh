@@ -4,16 +4,16 @@ SCRIPT="$0"
 
 usage() {
     cat <<eof
-Extracts the value of a LABEL, ENV or ARG declared in a Dockerfile
+Extracts the value of a LABEL, ENV or ARG declared in the Dockerfile
 
 Obs: this will NOT handle weird cases, such as when there is a escape inside
 the label value, the label name occurs inside another label value, etc...
 
 Usage:
-    $SCRIPT LABEL=l | ENV=e | ARG=a | < Dockerfile
-    LABEL=l $SCRIPT < Dockerfile
-    ENV=e $SCRIPT < Dockerfile
-    ARG=a $SCRIPT < Dockerfile
+    $SCRIPT LABEL=l | ENV=e | ARG=a
+    LABEL=l $SCRIPT
+    ENV=e $SCRIPT
+    ARG=a $SCRIPT
 eof
 }
 
@@ -24,7 +24,7 @@ main() {
     # Delete comments, merge escaped continuation lines, remove trailing spaces
     # and get just the LABEL instructions
     readarray -t lines < <(
-        grep -v '^\s*#' | \
+        < ./Dockerfile grep -v '^\s*#' | \
         sed -z 's/\\\n/ /g' | \
         sed -E 's/^\s+//g' | \
         grep "^${TYPE}" | \

@@ -8,17 +8,19 @@ usage() {
 Uses socat to remap a set of ports locally.
 
 Usage:
-    $SCRIPT [--check] LISTEN1:TARGET1 [ LISTEN2:TARGET2 ... ]
-    $SCRIPT [--check] 'LISTEN1:TARGET1,LISTEN2:TARGET2,...'
-    $SCRIPT [--check] 'LISTEN1:TARGET1 LISTEN2:TARGET2,...'
+    $SCRIPT [--check | --echo] LISTEN1:TARGET1 [ LISTEN2:TARGET2 ... ]
+    $SCRIPT [--check | --echo] 'LISTEN1:TARGET1,LISTEN2:TARGET2,...'
+    $SCRIPT [--check | --echo] 'LISTEN1:TARGET1 LISTEN2:TARGET2,...'
 
 Options:
     -h, --help   this help
     --check      just check if there's a process listening
+    --echo       just print port mappings, one line each
 eof
 }
 
 CHECK=false
+ECHO=false
 PORT_SPECS=()
 
 main() {
@@ -32,6 +34,8 @@ main() {
             else
                 echo >&2 "OK: $spec"
             fi
+        elif [ "$ECHO" = 'true' ]; then
+            echo "$spec"
         else
             nohup socat -d "TCP-LISTEN:$listen_port,fork" "TCP:localhost:$target_port" &
             pid="$!"
@@ -40,7 +44,7 @@ main() {
     done
 }
 
-if ! ARGS="$(getopt -o 'h' --long 'help,check' -- "$@")"; then
+if ! ARGS="$(getopt -o 'h' --long 'help,check,echo' -- "$@")"; then
     usage >&2
     exit 1
 fi
@@ -57,6 +61,10 @@ while true; do
         CHECK=true
         shift
         ;;
+    --echo )
+        ECHO=true
+        shift
+        ;;
     -- )
         shift
         break
@@ -69,6 +77,11 @@ while true; do
         ;;
     esac
 done
+
+if [ "$CHECK" = 'true' ] && [ "$ECHO" = 'true' ]; then
+    echo >&2 "ERROR: --check and --echo are mutually exclusive"
+    exit 1
+fi
 
 IFS=' ' read -ra PORT_SPECS <<<"${*//,/ }"
 
