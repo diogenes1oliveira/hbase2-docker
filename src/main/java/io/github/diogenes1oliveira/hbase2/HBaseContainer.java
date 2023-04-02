@@ -278,10 +278,12 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         return props;
     }
 
+    @SuppressWarnings("resource")
     public static class Builder {
         private String image;
         private Duration timeout;
         private boolean debug;
+        private boolean reuse;
         private Properties props;
 
         public Builder() {
@@ -291,6 +293,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
             this.image = (String) this.props.remove(PROP_PREFIX + "image");
             this.timeout = Duration.parse((String) this.props.remove(PROP_PREFIX + "timeout"));
             this.debug = Boolean.parseBoolean((String) this.props.remove(PROP_PREFIX + "debug"));
+            this.reuse = Boolean.parseBoolean((String) this.props.remove(PROP_PREFIX + "reuse"));
         }
 
         public Builder image(String image) {
@@ -313,8 +316,13 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
             return this;
         }
 
+        public Builder reuse(boolean reuse) {
+            this.reuse = reuse;
+            return this;
+        }
+
         public HBaseContainer build() {
-            return new HBaseContainer(image, timeout, debug, props);
+            return new HBaseContainer(image, timeout, debug, props).withReuse(reuse);
         }
     }
 
