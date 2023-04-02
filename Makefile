@@ -73,7 +73,7 @@ health:
 .PHONY: lint
 lint:
 	$(DOCKER) run --rm -i hadolint/hadolint:v2.12.0-alpine < ./Dockerfile
-	$(DOCKER) run --rm -v "$$PWD:/mnt:ro" -e SHELLCHECK_OPTS='-e SC2317' koalaman/shellcheck:v0.9.0 $(shell find ./.dev/ ./bin/ -name '*.sh')
+	$(DOCKER) run --rm -v "$$PWD:/mnt:ro" koalaman/shellcheck:v0.9.0 $(shell find .dev/ bin/ -name '*.sh')
 
 # $ make print-image-name
 # Just prints the actual image name
