@@ -7,6 +7,7 @@
 export HBASE_VERSION ?= $(shell .dev/dockerfile-get.sh ARG=HBASE_VERSION)
 export BUILD_DATE ?= 1970-01-01T00:00:00Z
 export BUILD_VERSION ?= $(shell .dev/maven-get-version.sh)
+BUILD_IS_STABLE := $(shell .dev/build-get-stable.sh)
 
 export IMAGE_TAG ?= $(BUILD_VERSION)-hbase$(HBASE_VERSION)
 IMAGE_REPO ?= $(shell .dev/dockerfile-get.sh LABEL=org.opencontainers.image.title)
@@ -39,6 +40,7 @@ build/info:
 	@echo "HBASE_VERSION=$(HBASE_VERSION)"
 	@echo "BUILD_DATE=$(BUILD_DATE)"
 	@echo "BUILD_VERSION=$(BUILD_VERSION)"
+	@echo "BUILD_IS_STABLE=$(BUILD_IS_STABLE)"
 	@echo "IMAGE_TAG=$(IMAGE_TAG)"
 	@echo "IMAGE_REPO=$(IMAGE_REPO)"
 	@echo "IMAGE_NAME=$(IMAGE_NAME)"
