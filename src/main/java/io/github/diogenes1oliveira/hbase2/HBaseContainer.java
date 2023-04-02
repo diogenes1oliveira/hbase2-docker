@@ -1,5 +1,6 @@
 package io.github.diogenes1oliveira.hbase2;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
@@ -11,21 +12,19 @@ import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.FixedHostPortGenericContainer;
-import org.testcontainers.containers.wait.strategy.AbstractWaitStrategy;
-import org.testcontainers.containers.wait.strategy.WaitStrategy;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
-import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.stream;
@@ -33,57 +32,76 @@ import static java.util.Arrays.stream;
 /**
  * Testcontainer for HBase 2
  */
-public class HBaseContainer extends FixedHostPortGenericContainer<HBaseContainer> {
+public class HBaseContainer extends GenericContainer<HBaseContainer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(HBaseContainer.class);
 
     public static final String ENV_DOTENV_NAME = "HBASE_ENV_FILE";
     public static final String ENV_DOTENV_VALUE = "/.env";
-    public static final String ENV_PORT_ZOOKEEPER = "HBASE_CONF_hbase_zookeeper_property_clientPort";
-    public static final String ENV_HOSTNAME_MASTER = "HBASE_CONF_hbase_master_hostname";
-    public static final String ENV_HOSTNAME_REGIONSERVER = "HBASE_CONF_hbase_regionserver_hostname";
+    public static final String ENV_PORT_ZOOKEEPER = "HBASE_SITE_hbase_zookeeper_property_clientPort";
+    public static final String ENV_PORT_MASTER = "HBASE_SITE_hbase_master_port";
+    public static final String ENV_HOSTNAME_MASTER = "HBASE_SITE_hbase_master_hostname";
+    public static final String ENV_HOSTNAME_REGIONSERVER = "HBASE_SITE_hbase_regionserver_hostname";
+    public static final String ENV_PORT_MAPPINGS = "HBASE_PORT_MAPPINGS";
     public static final String RESOURCE_CONFIG = "hbase2-docker.properties";
     public static final String PROP_DEFAULT_IMAGE = "hbase2-docker.default-image";
     public static final String PROPS_DEFAULT_TIMEOUT = "hbase2-docker.default-timeout";
 
-    public static final Function<HBaseContainer, String> HOST_IP_FUNCTION = HBaseContainer::getContainerIpAddress;
-    public static final Function<HBaseContainer, String> CONTAINER_IP_FUNCTION = container ->
-            container.getCurrentContainerInfo().getNetworkSettings().getIpAddress();
     public static final Map<String, Integer> DEFAULT_PORTS = new HashMap<String, Integer>() {{
         put(ENV_PORT_ZOOKEEPER, 2181);
-        put("HBASE_CONF_hbase_master_port", 16000);
-        put("HBASE_CONF_hbase_master_info_port", 16010);
-        put("HBASE_CONF_hbase_regionserver_port", 16020);
-        put("HBASE_CONF_hbase_regionserver_info_port", 16030);
+        put(ENV_PORT_MASTER, 16000);
+        put("HBASE_SITE_hbase_master_info_port", 16010);
+        put("HBASE_SITE_hbase_regionserver_port", 16020);
+        put("HBASE_SITE_hbase_regionserver_info_port", 16030);
     }};
-    public static final Set<Integer> DEFAULT_PORT_NUMBERS = new HashSet<>(DEFAULT_PORTS.values());
     private final Properties properties;
-    private final Function<HBaseContainer, String> getIpFunction;
-    private final Map<String, String> env = new HashMap<>();
     private final long timeoutNs;
 
     /**
      * Name of the Docker image to be used
      */
-    @SuppressWarnings({"resource", "deprecation"})
-    public HBaseContainer(String image, Function<HBaseContainer, String> getIpFunction, Duration timeout, Properties props) {
+    @SuppressWarnings({"resource"})
+    public HBaseContainer(String image, Duration timeout, Properties props) {
         super(image);
 
         withEnv(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
 
-        this.getIpFunction = getIpFunction;
         this.timeoutNs = timeout.toNanos();
         this.properties = props;
 
-        Set<Integer> ports = new HashSet<>(DEFAULT_PORT_NUMBERS);
+        withStartupTimeout(timeout);
+        withExposedPorts(DEFAULT_PORTS.values().toArray(new Integer[0]));
+        waitingFor(Wait.forHealthcheck());
+    }
 
-        for (String name : DEFAULT_PORTS.keySet()) {
-            int port = NetworkUtils.allocateAnotherPort(ports);
+    @Override
+    protected void containerIsStarting(InspectContainerResponse containerInfo) {
+        String containerIp = getContainerIpAddress();
+        Map<String, String> env = new HashMap<>();
 
-            addFixedExposedPort(port, port);
-            env.put(name, Integer.toString(port));
+        env.put(ENV_HOSTNAME_MASTER, containerIp);
+        env.put(ENV_HOSTNAME_REGIONSERVER, containerIp);
+        List<String> portMappings = new ArrayList<>();
+
+        for (Map.Entry<String, Integer> entry : DEFAULT_PORTS.entrySet()) {
+            String name = entry.getKey();
+            int originalPort = entry.getValue();
+            int mappedPort = getMappedPort(originalPort);
+            env.put(name, Integer.toString(mappedPort));
+            portMappings.add(originalPort + ":" + mappedPort);
         }
 
-        waitingFor(buildStatusWaitStrategy());
+        env.put(ENV_PORT_MAPPINGS, String.join(", ", portMappings));
+        env.put("HBASE_SITE_hbase_master", env.get(ENV_HOSTNAME_MASTER) + ":" + env.get(ENV_PORT_MASTER));
+        env.put("HBASE_SITE_hbase_zookeeper_quorum", env.get(ENV_HOSTNAME_MASTER) + ":" + env.get(ENV_PORT_ZOOKEEPER));
+
+        properties.setProperty("hbase.zookeeper.quorum", containerIp + ":" + env.get(ENV_PORT_ZOOKEEPER));
+
+        String envContents = asEnvContents(env);
+        byte[] envBytes = envContents.getBytes(UTF_8);
+
+        LOGGER.info("copying .env to container");
+        copyFileToContainer(Transferable.of(envBytes), ENV_DOTENV_VALUE);
+        LOGGER.info(".env copied");
     }
 
     /**
@@ -120,22 +138,13 @@ public class HBaseContainer extends FixedHostPortGenericContainer<HBaseContainer
         TableDescriptor descriptor = TableDescriptorBuilder.newBuilder(tableName)
                                                            .setColumnFamily(ColumnFamilyDescriptorBuilder.of(family))
                                                            .build();
-        while (true) {
-            try {
-                try (Connection connection = getConnection();
-                     Admin admin = connection.getAdmin()) {
-                    if (splits.length != 0) {
-                        admin.createTable(descriptor, splits);
-                    } else {
-                        admin.createTable(descriptor);
-                    }
-                }
-                break;
-            } catch (Exception e) {
-                LOGGER.info("failed to create table, trying again in 1 second", e);
-                uncheckedSleep(1000);
+        doWithRetry((_connection, admin) -> {
+            if (splits.length != 0) {
+                admin.createTable(descriptor, splits);
+            } else {
+                admin.createTable(descriptor);
             }
-        }
+        });
     }
 
     public void createTable(String name, String family, String... splits) {
@@ -145,22 +154,13 @@ public class HBaseContainer extends FixedHostPortGenericContainer<HBaseContainer
     }
 
     public void truncateTable(TableName tableName) {
-        while (true) {
-            try {
-                try (Connection connection = getConnection();
-                     Admin admin = connection.getAdmin()) {
-                    if (admin.isTableEnabled(tableName)) {
-                        admin.disableTable(tableName);
-                    }
-                    admin.truncateTable(tableName, true);
-                    admin.enableTable(tableName);
-                }
-                break;
-            } catch (Exception e) {
-                LOGGER.warn("failed to drop table " + tableName + ", trying again in 1 second", e);
-                uncheckedSleep(1000);
+        doWithRetry((_connection, admin) -> {
+            if (admin.isTableEnabled(tableName)) {
+                admin.disableTable(tableName);
             }
-        }
+            admin.truncateTable(tableName, true);
+            admin.enableTable(tableName);
+        });
     }
 
     public void truncateTable(String name) {
@@ -238,48 +238,6 @@ public class HBaseContainer extends FixedHostPortGenericContainer<HBaseContainer
         return builder.toString();
     }
 
-    private void setupContainer() {
-        String containerIp = getIpFunction.apply(this);
-
-        properties.setProperty("hbase.zookeeper.quorum", containerIp + ":" + env.get(ENV_PORT_ZOOKEEPER));
-        env.put(ENV_HOSTNAME_MASTER, containerIp);
-        env.put(ENV_HOSTNAME_REGIONSERVER, containerIp);
-
-        String envContents = asEnvContents(env);
-        byte[] envBytes = envContents.getBytes(UTF_8);
-
-        LOGGER.info("copying .env to container");
-        copyFileToContainer(Transferable.of(envBytes), ENV_DOTENV_VALUE);
-        LOGGER.info(".env copied");
-    }
-
-    private WaitStrategy buildStatusWaitStrategy() {
-
-        return new AbstractWaitStrategy() {
-            @Override
-            protected void waitUntilReady() {
-                setupContainer();
-
-                while (true) {
-                    try {
-                        LOGGER.info("checking HBase status");
-                        if (execInContainer("/bin/hbase-shell-run.sh", "status").getExitCode() == 0) {
-                            break;
-                        }
-                        LOGGER.warn("failed to run 'status' command via hbase shell, trying again in 10s");
-                        Thread.sleep(10_000);
-                    } catch (IOException e) {
-                        LOGGER.error("Failed to check HBase status", e);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-
-        };
-    }
-
     public static Builder newBuilder() {
         return new Builder();
     }
@@ -300,7 +258,6 @@ public class HBaseContainer extends FixedHostPortGenericContainer<HBaseContainer
 
     public static class Builder {
         private String image;
-        private Function<HBaseContainer, String> ipFunction = HOST_IP_FUNCTION;
         private Duration timeout;
         private Properties props;
 
@@ -315,11 +272,6 @@ public class HBaseContainer extends FixedHostPortGenericContainer<HBaseContainer
             return this;
         }
 
-        public Builder ipFunction(Function<HBaseContainer, String> ipFunction) {
-            this.ipFunction = ipFunction;
-            return this;
-        }
-
         public Builder timeout(Duration timeout) {
             this.timeout = timeout;
             return this;
@@ -331,7 +283,7 @@ public class HBaseContainer extends FixedHostPortGenericContainer<HBaseContainer
         }
 
         public HBaseContainer build() {
-            return new HBaseContainer(image, ipFunction, timeout, props);
+            return new HBaseContainer(image, timeout, props);
         }
     }
 
