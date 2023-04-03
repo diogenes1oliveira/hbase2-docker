@@ -77,7 +77,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
 
         withStartupTimeout(timeout);
         withExposedPorts(DEFAULT_PORTS.values().toArray(new Integer[0]));
-        waitingFor(Wait.forLogMessage("org.apache.hadoop.hbase.master.HMaster: Master has completed initialization", 1));
+        waitingFor(Wait.forLogMessage(".*org.apache.hadoop.hbase.master.HMaster: Master has completed initialization.*", 1));
     }
 
     @Override
