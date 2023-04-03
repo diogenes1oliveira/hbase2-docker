@@ -19,6 +19,7 @@ import org.testcontainers.images.builder.Transferable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.NoSuchFileException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,7 +43,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     public static final String ENV_HOSTNAME_MASTER = "HBASE_SITE_hbase_master_hostname";
     public static final String ENV_HOSTNAME_REGIONSERVER = "HBASE_SITE_hbase_regionserver_hostname";
     public static final String ENV_PORT_MAPPINGS = "HBASE_PORT_MAPPINGS";
-    public static final String RESOURCE_CONFIG = "hbase2-docker.properties";
+    public static final String RESOURCE_CONFIG_MAIN = "hbase2-docker.properties";
+    public static final String RESOURCE_CONFIG_DEFAULT = "hbase2-docker.default.properties";
     public static final String PROP_PREFIX = "hbase2-docker.";
 
     public static final Map<String, Integer> DEFAULT_PORTS = new HashMap<String, Integer>() {{
@@ -252,17 +254,15 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         return new Builder();
     }
 
-    public static Properties getDefaultProps() {
-        try (InputStream stream = HBaseContainer.class.getClassLoader().getResourceAsStream(RESOURCE_CONFIG)) {
+    public static Properties getResourceProps(String resourceName) throws IOException {
+        try (InputStream stream = HBaseContainer.class.getClassLoader().getResourceAsStream(resourceName)) {
             if (stream == null) {
-                throw new IOException("No such resource: " + RESOURCE_CONFIG);
+                throw new NoSuchFileException("No such resource: " + resourceName);
             }
             Properties props = new Properties();
             props.load(stream);
 
             return props;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 
@@ -288,7 +288,18 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         private Properties props;
 
         public Builder() {
-            this.props = getDefaultProps();
+            try {
+                this.props = getResourceProps(RESOURCE_CONFIG_DEFAULT);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            try {
+                this.props.putAll(getResourceProps(RESOURCE_CONFIG_MAIN));
+            } catch (NoSuchFileException e) {
+                //ignore
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
             this.props.putAll(getHBase2DockerSystemProps());
 
             this.image = (String) this.props.remove(PROP_PREFIX + "image");
