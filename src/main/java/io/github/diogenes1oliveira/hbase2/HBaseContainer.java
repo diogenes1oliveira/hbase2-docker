@@ -64,6 +64,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         super(image);
 
         withEnv(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
+        withEnv("HBASE_HEALTHCHECK_ENABLED", "false");
 
         this.timeoutNs = timeout.toNanos();
         this.properties = props;
@@ -76,7 +77,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
 
         withStartupTimeout(timeout);
         withExposedPorts(DEFAULT_PORTS.values().toArray(new Integer[0]));
-        waitingFor(Wait.forHealthcheck().withStartupTimeout(timeout));
+        waitingFor(Wait.forLogMessage("org.apache.hadoop.hbase.master.HMaster: Master has completed initialization", 1));
     }
 
     @Override
