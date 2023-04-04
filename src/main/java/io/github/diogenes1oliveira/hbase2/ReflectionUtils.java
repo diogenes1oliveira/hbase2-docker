@@ -15,8 +15,8 @@ public final class ReflectionUtils {
         // utility class
     }
 
-    public interface ThrowingReflectionSupplier {
-        Object get() throws IllegalAccessException, InvocationTargetException, InstantiationException;
+    public interface ReflectionInvoker {
+        Object invoke() throws IllegalAccessException, InvocationTargetException, InstantiationException;
     }
 
     public static Class<?> findClass(String className) {
@@ -41,9 +41,9 @@ public final class ReflectionUtils {
         }
     }
 
-    public static Object invokeUnchecked(ThrowingReflectionSupplier supplier) {
+    public static Object invokeUnchecked(ReflectionInvoker supplier) {
         try {
-            return supplier.get();
+            return supplier.invoke();
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("Bad argument types for reflected code", e);
         } catch (IllegalAccessException e) {
