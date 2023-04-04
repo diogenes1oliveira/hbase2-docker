@@ -17,9 +17,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.NoSuchFileException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static io.github.diogenes1oliveira.hbase2.PropertyUtils.getProp;
+import static io.github.diogenes1oliveira.hbase2.PropertyUtils.getProps;
+import static io.github.diogenes1oliveira.hbase2.PropertyUtils.getResourceProps;
+import static io.github.diogenes1oliveira.hbase2.PropertyUtils.mergeProps;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.stream;
 
@@ -43,9 +45,6 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     public static final String ENV_HOSTNAME_MASTER = "HBASE_SITE_hbase_master_hostname";
     public static final String ENV_HOSTNAME_REGIONSERVER = "HBASE_SITE_hbase_regionserver_hostname";
     public static final String ENV_PORT_MAPPINGS = "HBASE_PORT_MAPPINGS";
-    public static final String RESOURCE_CONFIG_MAIN = "hbase2-docker.properties";
-    public static final String RESOURCE_CONFIG_DEFAULT = "hbase2-docker.default.properties";
-    public static final String PROP_PREFIX = "hbase2-docker.";
 
     public static final Map<String, Integer> DEFAULT_PORTS = new HashMap<String, Integer>() {{
         put(ENV_PORT_ZOOKEEPER, 2181);
@@ -54,7 +53,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         put("HBASE_SITE_hbase_regionserver_port", 16020);
         put("HBASE_SITE_hbase_regionserver_info_port", 16030);
     }};
-    private final Properties properties;
+    private final Properties connectionProperties;
+    private final String hostname;
     private final long timeoutNs;
     private final boolean debug;
 
@@ -62,19 +62,22 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
      * Name of the Docker image to be used
      */
     @SuppressWarnings({"resource"})
-    public HBaseContainer(String image, Duration timeout, boolean debug, Properties props) {
+    public HBaseContainer(String image, Duration timeout, boolean debug, DockerHostnameFunction hostnameFunction, Properties connectionProperties) {
         super(image);
 
         withEnv(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
         withEnv("HBASE_HEALTHCHECK_ENABLED", "false");
 
+        this.hostname = hostnameFunction.getHostname(this.getDockerClient());
+        withExtraHost(hostname, "127.0.0.1");
+
         this.timeoutNs = timeout.toNanos();
-        this.properties = props;
+        this.connectionProperties = connectionProperties;
         this.debug = debug;
 
         LOGGER.info("Starting container against image={} with timeout={} and debug={}", image, timeout, debug);
         if (debug) {
-            LOGGER.info("Container properties: {}", props);
+            LOGGER.info("Container properties: {}", connectionProperties);
         }
 
         withStartupTimeout(timeout);
@@ -84,11 +87,10 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
 
     @Override
     protected void containerIsStarting(InspectContainerResponse containerInfo) {
-        String containerIp = getContainerIpAddress();
         Map<String, String> env = new HashMap<>();
 
-        env.put(ENV_HOSTNAME_MASTER, containerIp);
-        env.put(ENV_HOSTNAME_REGIONSERVER, containerIp);
+        env.put(ENV_HOSTNAME_MASTER, hostname);
+        env.put(ENV_HOSTNAME_REGIONSERVER, hostname);
         List<String> portMappings = new ArrayList<>();
 
         for (Map.Entry<String, Integer> entry : DEFAULT_PORTS.entrySet()) {
@@ -103,7 +105,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         env.put("HBASE_SITE_hbase_master", env.get(ENV_HOSTNAME_MASTER) + ":" + env.get(ENV_PORT_MASTER));
         env.put("HBASE_SITE_hbase_zookeeper_quorum", env.get(ENV_HOSTNAME_MASTER) + ":" + env.get(ENV_PORT_ZOOKEEPER));
 
-        properties.setProperty("hbase.zookeeper.quorum", containerIp + ":" + env.get(ENV_PORT_ZOOKEEPER));
+        connectionProperties.setProperty("hbase.zookeeper.quorum", hostname + ":" + env.get(ENV_PORT_ZOOKEEPER));
 
         String envContents = asEnvContents(env);
         if (debug) {
@@ -120,7 +122,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
      * Connection properties to connect to HBase within the container
      */
     public Properties getProperties() {
-        return properties;
+        return connectionProperties;
     }
 
     /**
@@ -254,27 +256,9 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         return new Builder();
     }
 
-    public static Properties getResourceProps(String resourceName) throws IOException {
-        try (InputStream stream = HBaseContainer.class.getClassLoader().getResourceAsStream(resourceName)) {
-            if (stream == null) {
-                throw new NoSuchFileException("No such resource: " + resourceName);
-            }
-            Properties props = new Properties();
-            props.load(stream);
-
-            return props;
-        }
-    }
-
-    public static Properties getHBase2DockerSystemProps() {
-        Properties props = new Properties();
-        Properties systemProps = System.getProperties();
-
-        for (String name : systemProps.stringPropertyNames()) {
-            if (name.startsWith(PROP_PREFIX)) {
-                props.setProperty(name, systemProps.getProperty(name));
-            }
-        }
+    public static Properties getHBase2DockerDefaultProps() {
+        Properties props = getResourceProps("hbase2-docker.properties");
+        props.putAll(getResourceProps("hbase2-docker.default.properties", false));
 
         return props;
     }
@@ -285,27 +269,28 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         private Duration timeout;
         private boolean debug;
         private boolean reuse;
-        private Properties props;
+        private Properties connectionProperties;
+        private DockerHostnameFunction hostnameFunction;
 
         public Builder() {
-            try {
-                this.props = getResourceProps(RESOURCE_CONFIG_DEFAULT);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            try {
-                this.props.putAll(getResourceProps(RESOURCE_CONFIG_MAIN));
-            } catch (NoSuchFileException e) {
-                //ignore
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            this.props.putAll(getHBase2DockerSystemProps());
+            this(mergeProps(getHBase2DockerDefaultProps(), System.getProperties()));
+        }
 
-            this.image = (String) this.props.remove(PROP_PREFIX + "image");
-            this.timeout = Duration.parse((String) this.props.remove(PROP_PREFIX + "timeout"));
-            this.debug = Boolean.parseBoolean((String) this.props.remove(PROP_PREFIX + "debug"));
-            this.reuse = Boolean.parseBoolean((String) this.props.remove(PROP_PREFIX + "reuse"));
+        public Builder(Properties props) {
+            this.image = getProp(props, "hbase2-docker.image");
+            this.timeout = getProp(props, "hbase2-docker.timeout", Duration::parse);
+            this.debug = getProp(props, "hbase2-docker.debug", Boolean::parseBoolean);
+            this.reuse = getProp(props, "hbase2-docker.reuse", Boolean::parseBoolean);
+            this.connectionProperties = getProps(props, "hbase2-docker.connection.");
+
+            String hostname = getProp(props, "hbase2-docker.hostname", false);
+            String hostnameMapper = getProp(props, "hbase2-docker.hostname-mapper", false);
+
+            if (hostname != null) {
+                this.hostnameFunction = d -> hostname;
+            } else if (hostnameMapper != null) {
+                this.hostnameFunction = DockerHostnameFunctions.fromPropertySpec(hostnameMapper);
+            }
         }
 
         public Builder image(String image) {
@@ -319,7 +304,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         }
 
         public Builder properties(Properties props) {
-            this.props = (Properties) props.clone();
+            this.connectionProperties = (Properties) props.clone();
             return this;
         }
 
@@ -333,8 +318,18 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
             return this;
         }
 
+        public Builder hostname(String hostname) {
+            this.hostnameFunction = DockerHostnameFunctions.constant(hostname);
+            return this;
+        }
+
+        public Builder hostname(DockerHostnameFunction hostnameFunction) {
+            this.hostnameFunction = hostnameFunction;
+            return this;
+        }
+
         public HBaseContainer build() {
-            return new HBaseContainer(image, timeout, debug, props).withReuse(reuse);
+            return new HBaseContainer(image, timeout, debug, hostnameFunction, connectionProperties).withReuse(reuse);
         }
     }
 

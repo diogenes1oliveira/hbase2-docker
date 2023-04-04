@@ -61,9 +61,11 @@
         <!-- dependency versions -->
         <testcontainers.version>1.16.2</testcontainers.version>
         <hbase.version>2.0.2</hbase.version>
-        <junit.version>5.8.2</junit.version>
         <slf4j.version>1.7.32</slf4j.version>
-
+        <!-- test dependencies -->
+        <junit.version>5.8.2</junit.version>
+        <junit-pioneer.version>1.9.1</junit-pioneer.version>
+        <hamcrest.version>2.2</hamcrest.version>
         <!-- plugin versions -->
         <surefire-plugin.version>2.22.2</surefire-plugin.version>
         <failsafe-plugin.version>2.22.2</failsafe-plugin.version>
@@ -98,6 +100,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.junit-pioneer</groupId>
+            <artifactId>junit-pioneer</artifactId>
+            <version>${junit-pioneer.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
@@ -113,6 +121,12 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>${hamcrest.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
