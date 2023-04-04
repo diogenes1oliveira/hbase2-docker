@@ -257,8 +257,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     }
 
     public static Properties getHBase2DockerDefaultProps() {
-        Properties props = getResourceProps("hbase2-docker.properties");
-        props.putAll(getResourceProps("hbase2-docker.default.properties", false));
+        Properties props = getResourceProps("hbase2-docker.default.properties");
+        props.putAll(getResourceProps("hbase2-docker.properties", false));
 
         return props;
     }
