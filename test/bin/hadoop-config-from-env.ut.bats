@@ -1,10 +1,6 @@
-setup() {
-    load '../utils'
-    load '../test_helper/bats-support/load'
-    load '../test_helper/bats-assert/load'
+#!/usr/bin/env bats
 
-    go_to_repo_root
-}
+load 'setup'
 
 @test "should escape underscores accordingly" {
     (

@@ -1,26 +1,20 @@
+#!/usr/bin/env bats
 
-setup() {
-    load '../utils'
-    load '../test_helper/bats-support/load'
-    load '../test_helper/bats-assert/load'
+load 'setup'
 
-    go_to_repo_root
-    SCRIPT="$(realpath ./.dev/markdown-rebase.sh)"
-}
-
-function verify_markdown {
+_verify_markdown() {
     input="$1"
     expected="$2"
 
-    run "${SCRIPT}" http://localhost <<<"${input}"
+    run .dev/markdown-rebase.sh http://localhost <<<"${input}"
     assert_success
 
-    actual="$( "${SCRIPT}" http://localhost <<<"${input}" )"
+    actual="$( .dev/markdown-rebase.sh http://localhost <<<"${input}" )"
     assert_equal "${actual}" "${expected}"
 }
 
 @test "replaces links" {
-    verify_markdown '
+    _verify_markdown '
         line without links
         [link1](no-such-file) something else [link2](README.md)
    
@@ -36,5 +30,5 @@ function verify_markdown {
 }
 
 @test "works with empty inputs" {
-    verify_markdown '' ''
+    _verify_markdown '' ''
 }
