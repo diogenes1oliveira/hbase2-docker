@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-VERSION="$(.dev/maven-get-version.sh)"
+VERSION="$1"
+
 
 if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo -n 'true'
