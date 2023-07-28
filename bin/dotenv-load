@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 SCRIPT="${BASH_SOURCE[0]:-$0}"
 
@@ -7,10 +8,13 @@ usage() {
 Loads environment variables from a .env file
 
 Usage:
-    source $SCRIPT ENV_FILE
+    source $SCRIPT [--wait=<SECONDS>] ENV_FILE
+    eval \`$SCRIPT [--wait=<SECONDS>] --echo ENV_FILE\`
 
 Options:
-    ENV_FILE    path to the .env file
+    -e, --echo             just print the variables in the export syntax
+    -w, --wait=<SECONDS>   seconds to wait if the .env file is not found
+    ENV_FILE               path to the .env file
 
 Obs:
 - Lines beginning with '#' are ignored
@@ -18,35 +22,104 @@ Obs:
 EOF
 }
 
+ENV_FILE=
+WAIT=0
+INTERVAL=1
+ECHO=
+
 main() {
-    while read -r line; do
-        if [[ "${line}" =~ ^([a-zA-Z0-9_]+)=(.*)$ ]]; then
-            name="${BASH_REMATCH[1]}"
-            value="${BASH_REMATCH[2]}"
-            export "$name=$value"
+    if ! [ -e "$ENV_FILE" ]; then
+        if [ "$WAIT" -gt 0 ]; then
+            wait_for_file
+        else
+            echo >&2 "ERROR: env file $ENV_FILE doesn't exist"
+            return 2
         fi
-    done < <( env_get_lines )
+    fi
+
+    names=()
+
+    while IFS='' read -r line || [ -n "$line" ]; do
+        if ! [[ "${line}" =~ ^([a-zA-Z0-9_]+)=(.*)$ ]]; then
+            continue
+        fi
+
+        name="${BASH_REMATCH[1]}"
+        value="${BASH_REMATCH[2]}"
+        names+=( "$name" )
+
+        if [ -n "$ECHO" ]; then
+            printf 'export %s=%q\n' "$name" "$value"
+        else
+            export "$name"="$value"
+        fi
+    done < "$ENV_FILE"
+
+    if [ "${#names[@]}" -gt 0 ]; then
+        IFS=' '
+        echo >&2 "INFO: exported variables from env file $ENV_FILE: ${names[*]}"
+    else
+        echo >&2 "INFO: no variable exported from env file $ENV_FILE"
+    fi
 }
 
-env_get_lines() {
-    < "$ENV_FILE" sed -e '/^\s\+$/d' | sed -e '/^\s*#.*/d'
+wait_for_file() {
+    local t0="$(monotonic_now)"
+
+    while ! [ -e "$ENV_FILE" ]; do
+        if [ "$(monotonic_delta "$t0")" -ge "$WAIT" ]; then
+            echo >&2 "ERROR: env file $ENV_FILE still not present after $WAIT seconds"
+            return 2
+        fi
+
+        echo >&2 "INFO: env file $ENV_FILE still not present, trying again in $INTERVAL second(s)"
+        sleep "$INTERVAL"
+    done
+
+    echo >&2 "INFO: env file $ENV_FILE is present after $(monotonic_delta "$t0") seconds"
 }
 
-for arg in "$@"; do
-    case "$arg" in
-    -h | --help )
-        usage && return 0 ;;
+monotonic_now() {
+    cut -d. -f1 /proc/uptime
+}
+
+monotonic_delta() {
+    local t0="$1"
+    local now="$(monotonic_now)"
+
+    printf '%s' "$((now-t0))"
+}
+
+OPTS="$(getopt -l help,echo,wait: -o hew: -n "$SCRIPT" -- "$@")"
+eval set -- "$OPTS"
+
+while true; do
+    case "${1:-}" in
+    -h | --help)
+        usage
+        exit 0;;
+    -e | --echo)
+        ECHO=1
+        shift;;
+    -w | --wait)
+        WAIT="${2:-}"
+        shift 2;;
+    --)
+        shift
+        break;;
     esac
 done
 
 ENV_FILE="${1:-}"
 
-if [ -z "$ENV_FILE" ]; then
-    usage >&2
-    echo >&2 ""
-    echo >&2 "ERROR: no ENV_FILE specified"
-    return 1
+if ! [[ "$WAIT" =~ ^[0-9]+$ ]]; then
+    echo >&2 "$SCRIPT: invalid value for --wait"
+    exit 1
 fi
 
+if [ -z "$ENV_FILE" ]; then
+    echo >&2 "$SCRIPT: no env file is set"
+    exit 1
+fi
 
 main
