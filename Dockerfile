@@ -43,7 +43,6 @@ ENV PATH="$HBASE_HOME/bin:$PATH" \
     HBASE_RUN_AS=hbase \
     HBASE_ENV_FILE= \
     HBASE_ENV_FILE_WAIT=10 \
-    HBASE_HEALTHCHECK_ENABLED=true \
     HBASE_HEALTHCHECK_EXPECTED_STATUS='1 active master, 0 backup masters, 1 servers, 0 dead' \
     HBASE_PORT_MAPPINGS= \
     HBASE_BACKGROUND_PIDS_FILE=/var/run/hbase2-docker.pids \
@@ -63,8 +62,6 @@ ENV PATH="$HBASE_HOME/bin:$PATH" \
     HBASE_SITE_hbase_regionserver_info_port=16030 \
     # zookeeper settings
     HBASE_SITE_hbase_zookeeper_property_clientPort=2181 \
-    HBASE_SITE_hbase_zookeeper_peerport=2888 \
-    HBASE_SITE_hbase_zookeeper_leaderport=3888 \
     # client settings
     HBASE_SITE_hbase_client_operation_timeout=2000 \
     HBASE_SITE_hbase_rpc_timeout=500 \
@@ -90,7 +87,6 @@ STOPSIGNAL SIGINT
 
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
 CMD [ "hbase2-docker-start" ]
-HEALTHCHECK --interval=10s --timeout=10s --start-period=10s --retries=2 CMD [ "hbase2-docker-healthcheck" ]
 
 ARG BUILD_DATE
 ARG BUILD_VERSION

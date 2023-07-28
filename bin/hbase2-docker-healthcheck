@@ -2,20 +2,33 @@
 
 set -uo pipefail
 
-OUTPUTS=''
-EXIT_CODE=0
-DOWN=
-
 main() {
-    if [ "${HBASE_HEALTHCHECK_ENABLED:-}" != 'true' ]; then
-        echo >&2 'INFO: health check is disabled'
-        echo 'hbase: UP'
-        return 0
+    local exit_code=0
+
+    if [ "$HBASE_MANAGES_ZK" = 'true' ]; then
+        check_zookeeper_port || exit_code=1
     fi
 
-    if ! check_hbase_status; then
-        EXIT_CODE=1
+    if [ "$HBASE_SITE_hbase_cluster_distributed" = 'false' ]; then
+        check_master_port || exit_code=1
+        check_regionserver_port || exit_code=1
     fi
+
+    check_background_pids || exit_code=1
+
+    if [ -n "${HBASE_HEALTHCHECK_EXPECTED_STATUS:-}" ]; then
+        if [ "$exit_code" -eq 0 ]; then
+            check_hbase_status || exit_code=1
+        else
+            echo >&2 'INFO: skipped status check, healthcheck already failed'
+        fi
+    fi
+
+    exit "$exit_code"
+}
+
+check_background_pids() {
+    local return_code=0
 
     if [ -e "${HBASE_BACKGROUND_PIDS_FILE:-}" ]; then
         for pid in $(cat $HBASE_BACKGROUND_PIDS_FILE); do
@@ -23,20 +36,46 @@ main() {
                 echo "pid($pid): UP"
             else
                 echo "pid($pid): DOWN"
-                EXIT_CODE=1
+                return_code=1
             fi
         done
     fi
 
-    printf '%s' "$OUTPUTS"
-    exit "$EXIT_CODE"
+    return "$return_code"
+}
+
+check_zookeeper_port() {
+    if nc -z localhost "$HBASE_SITE_hbase_zookeeper_property_clientPort"; then
+        echo "zookeeper($HBASE_SITE_hbase_zookeeper_property_clientPort): UP"
+    else
+        echo "zookeeper($HBASE_SITE_hbase_zookeeper_property_clientPort): DOWN"
+        return 1
+    fi
+}
+
+check_master_port() {
+    if nc -z localhost "$HBASE_SITE_hbase_master_port"; then
+        echo "master($HBASE_SITE_hbase_master_port): UP"
+    else
+        echo "master($HBASE_SITE_hbase_master_port): DOWN"
+        return 1
+    fi
+}
+
+check_regionserver_port() {
+    if nc -z localhost "$HBASE_SITE_hbase_regionserver_port"; then
+        echo "regionserver($HBASE_SITE_hbase_regionserver_port): UP"
+    else
+        echo "regionserver($HBASE_SITE_hbase_regionserver_port): DOWN"
+        return 1
+    fi
 }
 
 check_hbase_status() (
     set +e
 
-    output="$(echo 'status' | hbase shell -n)"
-    exit_code="$?"
+    local output="$(echo 'status' | hbase shell -n)"
+    local exit_code="$?"
 
     if [ "$exit_code" -ne 0 ]; then
         echo 'hbase: DOWN'
