@@ -1,25 +1,20 @@
 # This Makefile is a convenience to aggregate the build commands
 # Each phony target corresponds to a build command
 
--include .env
-
-# Don't forget to set BUILD_DATE accordingly in your CI command
 export HBASE_VERSION ?= $(shell .dev/dockerfile-get.sh ARG=HBASE_VERSION < Dockerfile)
+export IMAGE_REPO ?= diogenes1oliveira/hbase2-docker
+
+# Don't forget to set BUILD_DATE, BUILD_VERSION AND IMAGE_TAG accordingly in your CI command
 export BUILD_DATE ?= 1970-01-01T00:00:00Z
-export BUILD_VERSION ?= $(shell .dev/maven-get-version.sh < pom.xml)
-BUILD_IS_STABLE := $(shell .dev/build-get-stable.sh < pom.xml)
+export BUILD_VERSION ?= SNAPSHOT
+export IMAGE_TAG ?= latest
 
-export IMAGE_TAG ?= $(BUILD_VERSION)-hbase$(HBASE_VERSION)
-IMAGE_REPO ?= $(shell .dev/dockerfile-get.sh LABEL=org.opencontainers.image.title < Dockerfile)
 export IMAGE_NAME := $(IMAGE_REPO):$(IMAGE_TAG)
-
-# Repo base URL and description
-REPO_HOME ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.url < Dockerfile)
-REPO_DESCRIPTION ?= $(shell ./.dev/dockerfile-get.sh LABEL=org.opencontainers.image.description < Dockerfile)
+export BUILD_IS_STABLE := $(shell .dev/version-is-stable.sh "$(BUILD_VERSION)")
 
 export DOCKER ?= docker
 export DOCKER_COMPOSE ?= docker compose
-export CONTAINER_NAME ?= hbase2-docker
+export BATS ?= ./test/bats/bin/bats -F pretty
 
 # $ make build
 # Builds the Docker image
@@ -31,44 +26,65 @@ build:
 		--build-arg BUILD_VERSION \
 		--build-arg IMAGE_TAG \
 		.
-	$(DOCKER) tag $(IMAGE_NAME) $(IMAGE_REPO):latest
+	@ [ "$(IMAGE_TAG)" != 'latest' ] || $(DOCKER) tag $(IMAGE_NAME) $(IMAGE_REPO):latest
 
 # $ make build/info
 # Prints the configuration variables
 .PHONY: build/info
 build/info:
 	@echo "HBASE_VERSION=$(HBASE_VERSION)"
+	@echo "IMAGE_REPO=$(IMAGE_REPO)"
 	@echo "BUILD_DATE=$(BUILD_DATE)"
 	@echo "BUILD_VERSION=$(BUILD_VERSION)"
-	@echo "BUILD_IS_STABLE=$(BUILD_IS_STABLE)"
 	@echo "IMAGE_TAG=$(IMAGE_TAG)"
-	@echo "IMAGE_REPO=$(IMAGE_REPO)"
 	@echo "IMAGE_NAME=$(IMAGE_NAME)"
+	@echo "BUILD_IS_STABLE=$(BUILD_IS_STABLE)"
+
+# $ make up
+# Starts a HBase container via docker compose
+.PHONY: up
+up:
+	$(DOCKER_COMPOSE) up --remove-orphans --renew-anon-volumes --detach
 
 # $ make run
-# Starts a Docker container
+# Starts a HBase container via docker compose and follow its logs
 .PHONY: run
-run:
-	@.dev/docker-run.sh
-	$(DOCKER) logs -f $(CONTAINER_NAME)
+run: up logs
+	@ true
+
+# $ make shell
+# Starts a shell from the HBase container image
+.PHONY: shell
+shell:
+	$(DOCKER) run -it --rm --entrypoint /bin/bash "$(IMAGE_NAME)"
+
+# $ make exec
+# Opens a bash shell into the running container
+.PHONY: exec
+exec:
+	@ $(DOCKER_COMPOSE) exec -it hbase /bin/bash
 
 # $ make logs
-# Streams the logs of the Docker container
+# Streams the logs of the running container
 .PHONY: logs
 logs:
-	$(DOCKER) logs -f $(CONTAINER_NAME)
-
-# $ make rm
-# Removes the Docker container
-.PHONY: rm
-rm:
-	$(DOCKER) rm -f $(CONTAINER_NAME)
+	@ $(DOCKER_COMPOSE) logs -f
 
 # $ make health
 # Inspects the health of the Docker container
 .PHONY: health
 health:
-	$(DOCKER) inspect --format "{{json .State.Health }}" $(CONTAINER_NAME)
+	@ export CONTAINER_ID="$$($(DOCKER_COMPOSE) ps -q hbase)" && \
+	$(DOCKER) inspect --format "{{json .State.Health }}" "$$CONTAINER_ID" | jq
+
+# $ make rm
+# Terminates and cleans up the cluster started by $ make up
+.PHONY: rm
+rm:
+	@$(DOCKER_COMPOSE) kill || true
+	$(DOCKER_COMPOSE) rm -fsv
+	$(DOCKER) volume prune --all -f
+	$(DOCKER) network prune -f
 
 # $ make lint
 # Runs hadolint against the Dockerfile
@@ -77,36 +93,30 @@ lint:
 	$(DOCKER) run --rm -i hadolint/hadolint:v2.12.0-alpine < ./Dockerfile
 	$(DOCKER) run --rm -v "$$PWD:/mnt:ro" koalaman/shellcheck:v0.9.0 $(shell find .dev/ bin/ -name '*.sh')
 
-# $ make print-image-name
-# Just prints the actual image name
-.PHONY: print-image-name
-print-image-name:
-	@printf '%s' "$(IMAGE_NAME)"
+# $ make test/unit
+# Runs the Bats unit tests
+.PHONY: test/unit
+test/unit:
+	$(BATS) test/.dev
+	$(BATS) test/bin
+
+# $ make test/integration
+# Runs the Bats integration tests
+.PHONY: test/integration
+test/integration:
+	$(BATS) test/docker
 
 # $ make test
-# Runs the Bats tests
+# Runs the Bats unit and integration tests
 .PHONY: test
-test:
-	@./test/bats/bin/bats test/.dev
-	@test/bats/bin/bats test/bin
+test: test/unit test/integration
+	@ true
 
 # $ make push
 # Pushes the built image to the repository
 .PHONY: push
 push:
 	@$(DOCKER) push $(IMAGE_NAME)
-
-# $ make hbase/extract
-# Extracts the hbase folder contents into ./var
-.PHONY: hbase/extract
-hbase/extract:
-	@.dev/hbase-extract.sh
-
-# $ make hbase/shell
-# Runs the local hbase shell from ./var/hbase/bin
-.PHONY: hbase/shell
-hbase/shell:
-	@var/hbase/bin/hbase shell
 
 # $ make readme/absolutize
 # Absolutizes the README.md file links
@@ -122,23 +132,16 @@ readme/push: readme/absolutize
 	@read -r -p "transformed README is available in ./var. Push to Docker Hub? " answer; [ "$${answer}" = 'yes' ]
 	@$(DOCKER) pushrm "$(IMAGE_REPO)" --file ./var/README.docker.md --short "$(REPO_DESCRIPTION)"
 
-# $ make compose/up
-# Starts a Hadoop/HBase cluster via docker-compose
-.PHONY: compose/up
-compose/up:
-	$(DOCKER_COMPOSE) up --remove-orphans --renew-anon-volumes --detach
-
-# $ make compose/rm
-# Terminates and cleans up the cluster started by $ make compose/up
-.PHONY: compose/rm
-compose/rm:
-	$(DOCKER_COMPOSE) kill -s 9
-	$(DOCKER_COMPOSE) rm -fsv
-	$(DOCKER) volume prune -f
-	$(DOCKER) network prune -f
-
 # $ make maven/version
 # Prints the version in the root pom.xml
 .PHONY: maven/version
 maven/version:
 	@.dev/maven-get-version.sh
+
+# $ make hbase/extract
+# Extracts the hbase installation files from the Docker image
+.PHONY: hbase/extract
+hbase/extract:
+	@mkdir -p ./var/
+	@rm -rf ./var/hbase/
+	@$(DOCKER) run -i -w /opt --entrypoint tar "$(IMAGE_NAME)" -ch --dereference hbase/ | tar -x -C ./var/

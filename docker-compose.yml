@@ -1,144 +1,46 @@
 version: "3.5"
 
-x-hadoop-env: &x-hadoop-env
-  CORE_CONF_fs_defaultFS: hdfs://namenode.localhost:9000
-  CORE_CONF_hadoop_http_staticuser_user: root
-  CORE_CONF_hadoop_proxyuser_hue_hosts: "*"
-  CORE_CONF_hadoop_proxyuser_hue_groups: "*"
-  CORE_CONF_io_compression_codecs: org.apache.hadoop.io.compress.SnappyCodec
-  HDFS_CONF_dfs_webhdfs_enabled: "true"
-  HDFS_CONF_dfs_permissions_enabled: "false"
-  HDFS_CONF_dfs_namenode_datanode_registration_ip___hostname___check: "false"
-  YARN_CONF_yarn_log___aggregation___enable: "true"
-  YARN_CONF_yarn_log_server_url: http://historyserver.localhost:8188/applicationhistory/logs/
-  YARN_CONF_yarn_resourcemanager_recovery_enabled: "true"
-  YARN_CONF_yarn_resourcemanager_store_class: org.apache.hadoop.yarn.server.resourcemanager.recovery.FileSystemRMStateStore
-  YARN_CONF_yarn_resourcemanager_scheduler_class: org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler
-  YARN_CONF_yarn_scheduler_capacity_root_default_maximum___allocation___mb: 8192
-  YARN_CONF_yarn_scheduler_capacity_root_default_maximum___allocation___vcores: 4
-  YARN_CONF_yarn_resourcemanager_fs_state___store_uri: /rmstate
-  YARN_CONF_yarn_resourcemanager_system___metrics___publisher_enabled: "true"
-  YARN_CONF_yarn_resourcemanager_hostname: resourcemanager.localhost
-  YARN_CONF_yarn_resourcemanager_address: resourcemanager.localhost:8032
-  YARN_CONF_yarn_resourcemanager_scheduler_address: resourcemanager.localhost:8030
-  YARN_CONF_yarn_resourcemanager_resource__tracker_address: resourcemanager.localhost:8031
-  YARN_CONF_yarn_timeline___service_enabled: "true"
-  YARN_CONF_yarn_timeline___service_generic___application___history_enabled: "true"
-  YARN_CONF_yarn_timeline___service_hostname: historyserver.localhost
-  YARN_CONF_mapreduce_map_output_compress: "true"
-  YARN_CONF_mapred_map_output_compress_codec: org.apache.hadoop.io.compress.SnappyCodec
-  YARN_CONF_yarn_nodemanager_resource_memory___mb: 16384
-  YARN_CONF_yarn_nodemanager_resource_cpu___vcores: 8
-  YARN_CONF_yarn_nodemanager_disk___health___checker_max___disk___utilization___per___disk___percentage: 98.5
-  YARN_CONF_yarn_nodemanager_remote___app___log___dir: /app-logs
-  YARN_CONF_yarn_nodemanager_aux___services: mapreduce_shuffle
-  MAPRED_CONF_mapreduce_framework_name: yarn
-  MAPRED_CONF_mapred_child_java_opts: -Xmx4096m
-  MAPRED_CONF_mapreduce_map_memory_mb: 4096
-  MAPRED_CONF_mapreduce_reduce_memory_mb: 8192
-  MAPRED_CONF_mapreduce_map_java_opts: -Xmx3072m
-  MAPRED_CONF_mapreduce_reduce_java_opts: -Xmx6144m
-
-x-hbase-env: &x-hbase-env
-  HBASE_CONF_hbase_rootdir: hdfs://namenode.localhost:9000/hbase
-  HBASE_CONF_hbase_cluster_distributed: "true"
-  HBASE_CONF_hbase_zookeeper_quorum: zookeeper.localhost:2181
-  HBASE_CONF_hbase_master_hostname: hbase-master.localhost
-  HBASE_MANAGES_ZK: "false"
-
 services:
-  namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
-    container_name: namenode
-    hostname: namenode.localhost
-    volumes:
-      - hadoop_namenode:/hadoop/dfs/name
+  hbase:
+    image: ${IMAGE_REPO:-diogenes1oliveira/hbase2-docker}:${IMAGE_TAG:-latest}
+    extra_hosts:
+      - ${HBASE_DOCKER_HOSTNAME:-localhost}:127.0.0.1
     environment:
-      << : *x-hadoop-env
-      CLUSTER_NAME: test
-
-  datanode:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
-    container_name: datanode
-    hostname: datanode.localhost
-    volumes:
-      - hadoop_datanode:/hadoop/dfs/data
-    environment:
-      << : *x-hadoop-env
-      SERVICE_PRECONDITION: "namenode.localhost:50070"
-
-  resourcemanager:
-    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop2.7.4-java8
-    container_name: resourcemanager
-    hostname: resourcemanager.localhost
-    environment:
-      << : *x-hadoop-env
-      SERVICE_PRECONDITION: "namenode.localhost:50070 datanode.localhost:50075"
-
-  nodemanager:
-    image: bde2020/hadoop-nodemanager:2.0.0-hadoop2.7.4-java8
-    container_name: nodemanager
-    hostname: nodemanager.localhost
-    environment:
-      << : *x-hadoop-env
-      SERVICE_PRECONDITION: "namenode.localhost:50070 datanode.localhost:50075 resourcemanager.localhost:8088"
-
-  historyserver:
-    image: bde2020/hadoop-historyserver:2.0.0-hadoop2.7.4-java8
-    container_name: historyserver
-    hostname: historyserver.localhost
-    volumes:
-      - hadoop_historyserver:/hadoop/yarn/timeline
-    environment:
-      << : *x-hadoop-env
-      SERVICE_PRECONDITION: "namenode.localhost:50070 datanode.localhost:50075 resourcemanager.localhost:8088"
-
-  zookeeper:
-    image: zookeeper:3.4.10
-    container_name: zookeeper
-    hostname: zookeeper.localhost
-    environment:
-      ZOO_MY_ID: 1
-      ZOO_SERVERS: server.1=0.0.0.0:2888:3888
+      - HBASE_ROLE=master
+      - HBASE_MANAGES_ZK=true
+      - HBASE_SITE_hbase_cluster_distributed=false
+      - HBASE_SITE_hbase_zookeeper_property_clientPort=${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
+      - HBASE_SITE_hbase_zookeeper_quorum=${HBASE_DOCKER_HOSTNAME:-localhost}:${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
+      - HBASE_SITE_hbase_master_port=${HBASE_SITE_hbase_master_port:-16000}
+      - HBASE_SITE_hbase_master_info_port=${HBASE_SITE_hbase_master_info_port:-16010}
+      - HBASE_SITE_hbase_master_hostname=${HBASE_SITE_hbase_master_hostname:-${HBASE_DOCKER_HOSTNAME:-localhost}}
+      - HBASE_SITE_hbase_master=${HBASE_SITE_hbase_master_hostname:-${HBASE_DOCKER_HOSTNAME:-localhost}}:${HBASE_SITE_hbase_master_port:-16000}
+      - HBASE_SITE_hbase_regionserver_port=${HBASE_SITE_hbase_regionserver_port:-16020}
+      - HBASE_SITE_hbase_regionserver_info_port=${HBASE_SITE_hbase_regionserver_info_port:-16030}
+      - HBASE_SITE_hbase_regionserver_hostname=${HBASE_DOCKER_HOSTNAME:-localhost}
+      - HBASE_PORT_MAPPINGS
     ports:
-      - 2181:2181
+      - ${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}:2181
+      - ${HBASE_SITE_hbase_master_port:-16000}:16000
+      - ${HBASE_SITE_hbase_master_info_port:-16010}:16010
+      - ${HBASE_SITE_hbase_regionserver_port:-16020}:16020
+      - ${HBASE_SITE_hbase_regionserver_info_port:-16030}:16030
+    volumes:
+      - conf:/etc/hbase/
+    healthcheck:
+      test: hbase2-docker-healthcheck
+      interval: 15s
+      timeout: 10s
+      retries: 2
+      start_period: 20s
 
-  hbase-master:
-    image: diogenes1oliveira/hbase2-docker:1.0.0-hbase2.0.2
-    container_name: hbase-master
-    hostname: hbase-master.localhost
-    restart: always
-    environment:
-      << : *x-hbase-env
-      HBASE_ROLE: master
-      SERVICE_PRECONDITIONS: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181"
-    ports:
-      - 16000:16000
-      - 16010:16010
-
-  hbase-region1:
-    image: diogenes1oliveira/hbase2-docker:1.0.0-hbase2.0.2
-    container_name: hbase-region1
-    hostname: hbase-region1.localhost
-    restart: always
-    environment:
-      << : *x-hbase-env
-      HBASE_ROLE: regionserver
-      HBASE_CONF_hbase_regionserver_hostname: hbase-region1.localhost
-      HBASE_CONF_hbase_regionserver_port: 16020
-      HBASE_CONF_hbase_regionserver_info_port: 16030
-      SERVICE_PRECONDITIONS: "namenode.localhost:50070 datanode.localhost:50075 zookeeper.localhost:2181 hbase-master.localhost:16010"
-    ports:
-      - 16020:16020
-      - 16030:16030
+  client:
+    image: ${IMAGE_REPO:-diogenes1oliveira/hbase2-docker}:${IMAGE_TAG:-latest}
+    entrypoint: tail
+    command: -f /dev/null
+    network_mode: host
+    volumes:
+      - conf:/etc/hbase/
 
 volumes:
-  hadoop_namenode:
-  hadoop_datanode:
-  hadoop_historyserver:
-  hbase_data:
-  hbase_zookeeper_data:
-
-networks:
-  default:
-    name: localhost
+  conf:
