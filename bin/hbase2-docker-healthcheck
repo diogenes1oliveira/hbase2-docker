@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+OUTPUTS=''
+EXIT_CODE=0
+DOWN=
+
+main() {
+    if [ "${HBASE_HEALTHCHECK_ENABLED:-}" != 'true' ]; then
+        echo >&2 'INFO: health check is disabled'
+        echo 'hbase: UP'
+        return 0
+    fi
+
+    if ! check_hbase_status; then
+        EXIT_CODE=1
+    fi
+
+    if [ -e "${HBASE_BACKGROUND_PIDS_FILE:-}" ]; then
+        for pid in $(cat $HBASE_BACKGROUND_PIDS_FILE); do
+            if kill -0 "$pid"; then
+                echo "pid($pid): UP"
+            else
+                echo "pid($pid): DOWN"
+                EXIT_CODE=1
+            fi
+        done
+    fi
+
+    printf '%s' "$OUTPUTS"
+    exit "$EXIT_CODE"
+}
+
+check_hbase_status() (
+    set +e
+
+    output="$(echo 'status' | hbase shell -n)"
+    exit_code="$?"
+
+    if [ "$exit_code" -ne 0 ]; then
+        echo 'hbase: DOWN'
+        return 1
+    fi
+
+    if ! grep -q "$HBASE_HEALTHCHECK_EXPECTED_STATUS" <<<"$output"; then
+        printf '%s\n' "$output" >&2
+        echo 'hbase: DOWN'
+        return 1
+    fi
+
+    echo 'hbase: UP'
+)
+
+main
