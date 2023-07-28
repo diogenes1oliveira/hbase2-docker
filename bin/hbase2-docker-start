@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CMD=( hbase "$HBASE_COMMAND" start )
+
+if [ -n "${HBASE_RUN_AS:-}" ]; then
+    CMD=( runuser -u "$HBASE_RUN_AS" -- "${CMD[@]}" )
+fi
+
+IFS=' '
+echo >&2 "$ ${CMD[*]}"
+exec "${CMD[@]}"

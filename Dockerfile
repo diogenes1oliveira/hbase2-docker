@@ -33,15 +33,20 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         net-tools=1.60+git20181103.0eebece-1 \
         netcat=1.10-46 \
-        socat=1.7.4.1-3 && \
+        socat=1.7.4.1-3 \
+        wait-for-it=0.0~git20180723-1 && \
     rm -rf /var/lib/apt/lists
 
-ENV HBASE_MANAGES_ZK=true \
+ENV PATH="$HBASE_HOME/bin:$PATH" \
+    HBASE_MANAGES_ZK=true \
     HBASE_COMMAND=master \
     HBASE_RUN_AS=hbase \
     HBASE_ENV_FILE= \
+    HBASE_ENV_FILE_WAIT=10 \
     HBASE_HEALTHCHECK_ENABLED=true \
+    HBASE_HEALTHCHECK_EXPECTED_STATUS='1 active master, 0 backup masters, 1 servers, 0 dead' \
     HBASE_PORT_MAPPINGS= \
+    HBASE_BACKGROUND_PIDS_FILE=/var/run/hbase2-docker.pids \
     HBASE_SECURITY_LOGGER=INFO,console \
     # core settings
     HBASE_SITE_hbase_cluster_distributed=false \
@@ -77,14 +82,15 @@ ENV HBASE_SITE_hbase_master="$HBASE_SITE_hbase_master_hostname:$HBASE_SITE_hbase
 
 COPY ./conf/ "$HBASE_CONF_DIR/"
 COPY ./bin/* /bin/
+COPY ./docker-entrypoint-init.d /docker-entrypoint-init.d/
 COPY ./docker-entrypoint.sh /
 
 WORKDIR "$HBASE_HOME"
 STOPSIGNAL SIGINT
 
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
-CMD [ "/bin/sh", "-c", "exec \"$HBASE_HOME/bin/hbase\" \"$HBASE_COMMAND\" start" ]
-HEALTHCHECK --interval=20s --timeout=10s --start-period=30s --retries=3 CMD [ "hbase-health-check" ]
+CMD [ "hbase2-docker-start" ]
+HEALTHCHECK --interval=10s --timeout=10s --start-period=10s --retries=2 CMD [ "hbase2-docker-healthcheck" ]
 
 ARG BUILD_DATE
 ARG BUILD_VERSION

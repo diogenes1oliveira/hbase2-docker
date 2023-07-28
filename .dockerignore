@@ -3,3 +3,4 @@
 !/bin
 !/conf
 !/docker-entrypoint.sh
+!/docker-entrypoint-init.d
