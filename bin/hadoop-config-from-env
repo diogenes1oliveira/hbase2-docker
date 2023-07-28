@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+
+SCRIPT="${BASH_SOURCE[0]:-$0}"
+
+set -euo pipefail
+
+usage() {
+    cat <<eof
+Generates a hadoop configuration file based on the environment variables
+
+Usage:
+    $SCRIPT PREFIX [ FORMAT ]
+
+Options:
+    PREFIX  only consider variables starting with this value
+    FORMAT  '.xml' (default) or '.properties'
+
+This script maps environment variables with the prefix HBASE_CONF_ by removing
+the prefix and replacing underscores by dots or dashes:
+
+<!-- PREFIX_single_underscore_is_dot=value -->
+<!-- PREFIX_double__underscore__is__dash=value -->
+<!-- PREFIX_triple___underscore___is___underscore=value -->
+
+.xml:
+
+<property>
+    <name>single.underscore.is.dot</name>
+    <value>value</value>
+</property>
+<property>
+    <name>double-underscore-is-dash</name>
+    <value>value</value>
+</property>
+<property>
+    <name>triple_underscore_is_underscore</name>
+    <value>value</value>
+</property>
+
+.properties:
+
+single.underscore.is.dot=value
+double-underscore-is-dash=value
+triple_underscore_is_underscore=value
+
+eof
+}
+
+PREFIX=
+FORMAT=.xml
+
+main() {
+    print_header
+
+    for env_name in $( awk 'BEGIN{for(v in ENVIRON) print v}' ); do
+        if prop_name="$(env_to_prop_name "$env_name")"; then
+            print_prop "$prop_name" "${!env_name}"
+        fi
+    done
+
+    print_footer
+}
+
+env_to_prop_name() {
+    local env_name="$1"
+    local prop_name="${env_name#"$PREFIX"}"
+    if [ -z "$prop_name" ] || [ "$prop_name" = "$env_name" ]; then
+        return 1
+    fi
+
+    prop_name="${prop_name//_/.}"
+    prop_name="${prop_name//.../_}"
+    prop_name="${prop_name//../-}"
+
+    printf '%s' "$prop_name"
+}
+
+print_header() {
+    case "$FORMAT" in
+    .xml)
+        echo '<?xml version="1.0"?>'
+        echo '<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>'
+        echo "<!-- generated from environment variables $PREFIX* -->"
+        echo '<configuration>'
+        ;;
+    .properties)
+        echo "# generated from environment variables $PREFIX*"
+        ;;
+    esac
+}
+
+print_prop() {
+    local prop_name="$1"
+    local value="$2"
+
+    case "$FORMAT" in
+    .xml)
+        echo "<property>"
+        echo "    <name>$prop_name</name>"
+        echo "    <value>$value</value>"
+        echo "</property>"
+        ;;
+    .properties)
+        echo "$prop_name=$value"
+        ;;
+    esac
+
+}
+
+print_footer() {
+    case "$FORMAT" in
+    .xml)
+        echo '</configuration>'
+        ;;
+    esac
+}
+
+for arg in "$@"; do
+    case "$arg" in
+    -h | --help )
+        usage && exit 0 ;;
+    esac
+done
+
+PREFIX="${1:-}"
+FORMAT="${2:-.xml}"
+
+if [ -z "$PREFIX" ]; then
+    echo >&2 "ERROR: no environment prefix specified"
+    exit 1
+fi
+
+main
