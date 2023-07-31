@@ -14,7 +14,8 @@ export BUILD_IS_STABLE := $(shell .dev/version-is-stable.sh "$(BUILD_VERSION)")
 
 export DOCKER ?= docker
 export DOCKER_COMPOSE ?= docker compose
-export BATS ?= ./test/bats/bin/bats -F pretty
+export BATS_FORMAT ?= tap
+export BATS ?= ./test/bats/bin/bats -F $(BATS_FORMAT)
 
 # $ make build
 # Builds the Docker image
