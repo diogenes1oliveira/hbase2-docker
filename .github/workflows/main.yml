@@ -27,6 +27,12 @@ jobs:
           export BUILD_VERSION="$( .dev/maven-get-version.sh )"
           make -s build/info | tee -a $GITHUB_ENV
 
+      - name: get hosts
+        run: |
+          set -eu
+          cat /etc/hosts
+          false
+
       - name: Lint scripts and Dockerfile
         run: make lint
 

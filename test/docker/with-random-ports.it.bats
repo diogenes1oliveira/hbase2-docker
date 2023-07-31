@@ -36,6 +36,7 @@ teardown() {
 
 @test 'should connect for machine hostname and random ports' {
     export HBASE_DOCKER_HOSTNAME="$(hostname)"
+    echo >&3 "# INFO: export HBASE_DOCKER_HOSTNAME=$HBASE_DOCKER_HOSTNAME"
     _docker_compose_up_and_wait
 
     _hbase_shell 'status'
