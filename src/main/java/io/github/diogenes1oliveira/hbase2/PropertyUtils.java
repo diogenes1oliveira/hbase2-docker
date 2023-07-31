@@ -89,4 +89,10 @@ public final class PropertyUtils {
 
         return result;
     }
+
+    public static String propToEnv(String propName) {
+        return "HBASE_SITE_" + propName.replace("_", "___")
+                                       .replace("-", "--")
+                                       .replace(".", "_");
+    }
 }

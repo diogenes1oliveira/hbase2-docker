@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
+import org.testcontainers.shaded.com.google.common.base.Charsets;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -29,6 +30,7 @@ import static io.github.diogenes1oliveira.hbase2.PropertyUtils.getProp;
 import static io.github.diogenes1oliveira.hbase2.PropertyUtils.getProps;
 import static io.github.diogenes1oliveira.hbase2.PropertyUtils.getResourceProps;
 import static io.github.diogenes1oliveira.hbase2.PropertyUtils.mergeProps;
+import static io.github.diogenes1oliveira.hbase2.PropertyUtils.propToEnv;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.stream;
 
@@ -43,6 +45,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     public static final String ENV_PORT_ZOOKEEPER = "HBASE_SITE_hbase_zookeeper_property_clientPort";
     public static final String ENV_PORT_MASTER = "HBASE_SITE_hbase_master_port";
     public static final String ENV_HOSTNAME_MASTER = "HBASE_SITE_hbase_master_hostname";
+    public static final String ENV_MASTER = "HBASE_SITE_hbase_master";
+    public static final String ENV_QUORUM = "HBASE_SITE_hbase_zookeeper_quorum";
     public static final String ENV_HOSTNAME_REGIONSERVER = "HBASE_SITE_hbase_regionserver_hostname";
     public static final String ENV_PORT_MAPPINGS = "HBASE_PORT_MAPPINGS";
 
@@ -53,7 +57,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         put("HBASE_SITE_hbase_regionserver_port", 16020);
         put("HBASE_SITE_hbase_regionserver_info_port", 16030);
     }};
-    private final Properties connectionProperties;
+    private final Map<String, String> env = new HashMap<>();
+    private final Properties connectionProperties = new Properties();
     private final String hostname;
     private final long timeoutNs;
     private final boolean debug;
@@ -62,33 +67,36 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
      * Name of the Docker image to be used
      */
     @SuppressWarnings({"resource"})
-    public HBaseContainer(String image, Duration timeout, boolean debug, DockerHostnameFunction hostnameFunction, Properties connectionProperties) {
+    public HBaseContainer(String image, Duration timeout, boolean debug, DockerHostnameFunction hostnameFunction, Properties defaultProps) {
         super(image);
 
+        env.put(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
         withEnv(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
-        withEnv("HBASE_HEALTHCHECK_ENABLED", "false");
 
         this.hostname = hostnameFunction.getHostname(this.getDockerClient());
-        withExtraHost(hostname, "127.0.0.1");
+        if(!"localhost".equals(this.hostname)) {
+            withExtraHost(hostname, "127.0.0.1");
+        }
 
         this.timeoutNs = timeout.toNanos();
-        this.connectionProperties = connectionProperties;
+        for(String propName: defaultProps.stringPropertyNames()) {
+            String envName = propToEnv(propName);
+            withEnv(envName, defaultProps.getProperty(propName));
+        }
         this.debug = debug;
 
         LOGGER.info("Starting container against image={} with timeout={} and debug={}", image, timeout, debug);
         if (debug) {
-            LOGGER.info("Container properties: {}", connectionProperties);
+            LOGGER.info("Default properties: {}", defaultProps);
         }
 
         withStartupTimeout(timeout);
         withExposedPorts(DEFAULT_PORTS.values().toArray(new Integer[0]));
-        waitingFor(Wait.forLogMessage(".*org.apache.hadoop.hbase.master.HMaster: Master has completed initialization.*", 1));
+        waitingFor(Wait.forSuccessfulCommand("hbase2-docker-healthcheck"));
     }
 
     @Override
     protected void containerIsStarting(InspectContainerResponse containerInfo) {
-        Map<String, String> env = new HashMap<>();
-
         env.put(ENV_HOSTNAME_MASTER, hostname);
         env.put(ENV_HOSTNAME_REGIONSERVER, hostname);
         List<String> portMappings = new ArrayList<>();
@@ -102,10 +110,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         }
 
         env.put(ENV_PORT_MAPPINGS, String.join(", ", portMappings));
-        env.put("HBASE_SITE_hbase_master", env.get(ENV_HOSTNAME_MASTER) + ":" + env.get(ENV_PORT_MASTER));
-        env.put("HBASE_SITE_hbase_zookeeper_quorum", env.get(ENV_HOSTNAME_MASTER) + ":" + env.get(ENV_PORT_ZOOKEEPER));
-
-        connectionProperties.setProperty("hbase.zookeeper.quorum", hostname + ":" + env.get(ENV_PORT_ZOOKEEPER));
+        env.put(ENV_MASTER, env.get(ENV_HOSTNAME_MASTER) + ":" + env.get(ENV_PORT_MASTER));
+        env.put(ENV_QUORUM, env.get(ENV_HOSTNAME_MASTER) + ":" + env.get(ENV_PORT_ZOOKEEPER));
 
         String envContents = asEnvContents(env);
         if (debug) {
@@ -116,6 +122,18 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         LOGGER.info("copying .env to container");
         copyFileToContainer(Transferable.of(envBytes), ENV_DOTENV_VALUE);
         LOGGER.info(".env copied");
+    }
+
+    @Override
+    protected void containerIsStarted(InspectContainerResponse containerInfo) {
+        copyFileFromContainer("/etc/hbase/hbase-site.properties", stream -> {
+            connectionProperties.load(stream);
+            return null;
+        });
+
+        if (debug) {
+            LOGGER.info("Final container properties: {}", connectionProperties);
+        }
     }
 
     /**

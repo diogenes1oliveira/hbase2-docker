@@ -4,10 +4,10 @@
 export HBASE_VERSION ?= $(shell .dev/dockerfile-get.sh ARG=HBASE_VERSION < Dockerfile)
 export IMAGE_REPO ?= diogenes1oliveira/hbase2-docker
 
-# Don't forget to set BUILD_DATE, BUILD_VERSION AND IMAGE_TAG accordingly in your CI command
+# Don't forget to set BUILD_DATE and BUILD_VERSION in your CI command
 export BUILD_DATE ?= 1970-01-01T00:00:00Z
 export BUILD_VERSION ?= SNAPSHOT
-export IMAGE_TAG ?= latest
+export IMAGE_TAG ?= $(BUILD_VERSION)-hbase$(HBASE_VERSION)
 
 export IMAGE_NAME := $(IMAGE_REPO):$(IMAGE_TAG)
 export BUILD_IS_STABLE := $(shell .dev/version-is-stable.sh "$(BUILD_VERSION)")
@@ -137,6 +137,14 @@ readme/push: readme/absolutize
 .PHONY: maven/version
 maven/version:
 	@.dev/maven-get-version.sh
+
+# $ make maven/install
+# Prints the install in the root pom.xml
+.PHONY: maven/install
+maven/install:
+	@sed -i "s|^hbase2-docker.image=.*|hbase2-docker.image=$(IMAGE_NAME)|g" ./src/main/resources/hbase2-docker.default.properties
+	@grep hbase2-docker.image ./src/main/resources/hbase2-docker.default.properties | sed 's/^/> /g'
+	@mvn clean -B install
 
 # $ make hbase/extract
 # Extracts the hbase installation files from the Docker image

@@ -7,7 +7,7 @@
     <groupId>io.github.diogenes1oliveira</groupId>
     <artifactId>hbase2-testcontainers</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.5</version>
+    <version>0.1.6-alpha1-SNAPSHOT</version>
     <name>hbase2-testcontainers</name>
     <description>
         Isolated container management for HBase 2 code testing
@@ -59,7 +59,7 @@
         <autoReleaseAfterClose>false</autoReleaseAfterClose>
 
         <!-- dependency versions -->
-        <testcontainers.version>1.16.2</testcontainers.version>
+        <testcontainers.version>1.18.3</testcontainers.version>
         <hbase.version>2.0.2</hbase.version>
         <slf4j.version>1.7.32</slf4j.version>
         <!-- test dependencies -->
