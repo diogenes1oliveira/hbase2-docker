@@ -29,8 +29,10 @@ jobs:
 
       - name: get hosts
         run: |
-          set -eu
+          set -eux
           cat /etc/hosts
+          hostname
+          nslookup "$(hostname)"
           false
 
       - name: Lint scripts and Dockerfile
