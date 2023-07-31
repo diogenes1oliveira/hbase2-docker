@@ -33,6 +33,7 @@ jobs:
           cat /etc/hosts
           hostname
           nslookup "$(hostname)"
+          docker info
           false
 
       - name: Lint scripts and Dockerfile
