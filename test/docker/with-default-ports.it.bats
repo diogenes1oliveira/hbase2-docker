@@ -9,14 +9,14 @@ setup() {
     export HBASE_SITE_hbase_master_info_port=16010
     export HBASE_SITE_hbase_regionserver_port=16020
     export HBASE_SITE_hbase_regionserver_info_port=16030
-    export HBASE_PORT_MAPPINGS=''
 }
 
 teardown() {
-    _docker_compose kill -s 9 || true
-    _docker_compose rm -fsv
-	_docker volume prune --all -f
-	_docker network prune -f
+    _docker_compose kill --signal 9 || true
+    _docker_compose down --volumes --remove-orphans
+    _docker_compose rm --force --stop --volumes
+	_docker network prune --force
+	_docker volume prune --all --force || _docker volume prune --force
 }
 
 @test 'should connect for localhost and default ports' {
@@ -30,6 +30,7 @@ teardown() {
 
 @test 'should connect for machine hostname and default ports' {
     export HBASE_DOCKER_HOSTNAME="$(hostname)"
+    echo >&3 "# INFO: export HBASE_DOCKER_HOSTNAME=$HBASE_DOCKER_HOSTNAME"
     _docker_compose_up_and_wait
 
     _hbase_shell 'status'
