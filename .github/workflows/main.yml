@@ -27,6 +27,9 @@ jobs:
           export BUILD_VERSION="$( .dev/maven-get-version.sh )"
           make -s build/info | tee -a $GITHUB_ENV
 
+      - name: try ssh
+        uses: mxschmitt/action-tmate@v3
+
       - name: get hosts
         run: |
           set -eux
@@ -35,6 +38,7 @@ jobs:
           docker run -d --rm -p 8000:8000 python:3.9 python3 -m http.server
           sleep 5
           curl localhost:8000 -v
+
           nslookup "$(hostname)"
           docker info
           env
