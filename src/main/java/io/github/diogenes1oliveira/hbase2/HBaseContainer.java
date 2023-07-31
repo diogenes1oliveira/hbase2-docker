@@ -73,8 +73,9 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         env.put(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
         withEnv(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
 
-        this.hostname = hostnameFunction.getHostname(this.getDockerClient());
+        this.hostname = hostnameFunction.getHostname(this);
         if(!"localhost".equals(this.hostname)) {
+            LOGGER.info("setting hostname {}=127.0.0.1", this.hostname);
             withExtraHost(hostname, "127.0.0.1");
         }
 

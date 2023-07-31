@@ -31,7 +31,10 @@ jobs:
         run: |
           set -eux
           cat /etc/hosts
-          hostname
+          hn="$(hostname)"
+          docker run -d --rm -p 8000:8000 python:3.9 python3 -m http.server
+          sleep 5
+          curl localhost:8000 -v
           nslookup "$(hostname)"
           docker info
           env
