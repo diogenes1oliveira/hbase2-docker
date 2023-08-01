@@ -105,7 +105,9 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         for (Map.Entry<String, Integer> entry : DEFAULT_PORTS.entrySet()) {
             String name = entry.getKey();
             int originalPort = entry.getValue();
+
             int mappedPort = getMappedPort(originalPort);
+
             env.put(name, Integer.toString(mappedPort));
             portMappings.add(originalPort + ":" + mappedPort);
         }
