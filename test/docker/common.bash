@@ -8,6 +8,18 @@ load '../test_helper/bats-assert/load'
 cd "$BATS_TEST_DIRNAME/../.."
 export BATS_TEST_NAME_PREFIX="$(basename "$BATS_TEST_FILENAME"): "
 
+teardown() (
+    echo "# INFO: cleaning up docker" >&3
+
+    _docker_compose kill --signal 9 || true
+    _docker_compose down --volumes --remove-orphans
+    _docker_compose rm --force --stop --volumes
+	_docker network prune --force
+	_docker volume prune --all --force || _docker volume prune --force
+
+    echo "# INFO: Docker cleaned up" >&3
+)
+
 setup_file() {
     echo >&3 "# INFO: executing $BATS_TEST_NAME_PREFIX"
 }
