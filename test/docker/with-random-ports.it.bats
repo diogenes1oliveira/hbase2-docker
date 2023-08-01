@@ -11,14 +11,6 @@ setup() {
     export HBASE_SITE_hbase_regionserver_info_port="$(.dev/tcp-get-free-port.sh "$((HBASE_SITE_hbase_regionserver_port+1))")"
 }
 
-teardown() {
-    _docker_compose kill --signal 9 || true
-    _docker_compose down --volumes --remove-orphans
-    _docker_compose rm --force --stop --volumes
-	_docker network prune --force
-	_docker volume prune --all --force || _docker volume prune --force
-}
-
 @test 'should connect for localhost and random ports' {
     export HBASE_DOCKER_HOSTNAME=localhost
     _docker_compose_up_and_wait
