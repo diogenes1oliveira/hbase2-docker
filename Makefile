@@ -27,7 +27,7 @@ build:
 		--build-arg BUILD_VERSION \
 		--build-arg IMAGE_TAG \
 		.
-	@ [ "$(IMAGE_TAG)" != 'latest' ] || $(DOCKER) tag $(IMAGE_NAME) $(IMAGE_REPO):latest
+	@ set -x; [ "$(IMAGE_TAG)" = 'latest' ] || $(DOCKER) tag $(IMAGE_NAME) $(IMAGE_REPO):latest
 
 # $ make build/info
 # Prints the configuration variables

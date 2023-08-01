@@ -18,7 +18,13 @@ services:
       - HBASE_SITE_hbase_regionserver_port=${HBASE_SITE_hbase_regionserver_port:-16020}
       - HBASE_SITE_hbase_regionserver_info_port=${HBASE_SITE_hbase_regionserver_info_port:-16030}
       - HBASE_SITE_hbase_regionserver_hostname=${HBASE_DOCKER_HOSTNAME:-localhost}
-      - HBASE_PORT_MAPPINGS
+      - >-
+        HBASE_PORT_MAPPINGS=
+          2181:${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
+          16000:${HBASE_SITE_hbase_master_port:-16000}
+          16010:${HBASE_SITE_hbase_master_info_port:-16010}
+          16020:${HBASE_SITE_hbase_regionserver_port:-16020}
+          16030:${HBASE_SITE_hbase_regionserver_info_port:-16030}
     ports:
       - ${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}:2181
       - ${HBASE_SITE_hbase_master_port:-16000}:16000

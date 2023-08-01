@@ -9,20 +9,14 @@ setup() {
     export HBASE_SITE_hbase_master_info_port="$(.dev/tcp-get-free-port.sh "$((HBASE_SITE_hbase_master_port+1))")"
     export HBASE_SITE_hbase_regionserver_port="$(.dev/tcp-get-free-port.sh "$((HBASE_SITE_hbase_master_info_port+1))")"
     export HBASE_SITE_hbase_regionserver_info_port="$(.dev/tcp-get-free-port.sh "$((HBASE_SITE_hbase_regionserver_port+1))")"
-    export HBASE_PORT_MAPPINGS="
-        2181:$HBASE_SITE_hbase_zookeeper_property_clientPort
-        16000:$HBASE_SITE_hbase_master_port
-        16010:$HBASE_SITE_hbase_master_info_port
-        16020:$HBASE_SITE_hbase_regionserver_port
-        16030:$HBASE_SITE_hbase_regionserver_info_port
-    "
 }
 
 teardown() {
-    _docker_compose kill -s 9 || true
-    _docker_compose rm -fsv
-	_docker volume prune --all -f
-	_docker network prune -f
+    _docker_compose kill --signal 9 || true
+    _docker_compose down --volumes --remove-orphans
+    _docker_compose rm --force --stop --volumes
+	_docker network prune --force
+	_docker volume prune --all --force || _docker volume prune --force
 }
 
 @test 'should connect for localhost and random ports' {

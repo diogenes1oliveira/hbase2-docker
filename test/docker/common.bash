@@ -63,4 +63,4 @@ export DOCKER="${DOCKER:-docker}"
 export DOCKER_COMPOSE_NAME="$(_docker_compose config --format json | jq -r '.name')"
 export DOCKER_CONTAINER_NAME="$DOCKER_COMPOSE_NAME-hbase-1"
 
-export TEST_MAX_TRIES=12
+export TEST_MAX_TRIES=24
