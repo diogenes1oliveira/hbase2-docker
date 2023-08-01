@@ -27,10 +27,7 @@ jobs:
           export BUILD_VERSION="$( .dev/maven-get-version.sh )"
           make -s build/info | tee -a $GITHUB_ENV
 
-      - name: try ssh
-        uses: mxschmitt/action-tmate@v3
-
-      - name: get hosts
+      - name: try shell
         run: |
           set -eux
           cat /etc/hosts
