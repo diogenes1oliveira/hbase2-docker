@@ -7,7 +7,7 @@
     <groupId>io.github.diogenes1oliveira</groupId>
     <artifactId>hbase2-testcontainers</artifactId>
     <packaging>jar</packaging>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
     <name>hbase2-testcontainers</name>
     <description>
         Isolated container management for HBase 2 code testing

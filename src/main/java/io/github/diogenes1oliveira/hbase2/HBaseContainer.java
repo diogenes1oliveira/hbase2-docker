@@ -8,6 +8,7 @@ import io.github.diogenes1oliveira.hbase2.interfaces.IOConsumer;
 import io.github.diogenes1oliveira.hbase2.interfaces.IOFunction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotEnabledException;
 import org.apache.hadoop.hbase.TableNotFoundException;
@@ -181,7 +182,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         TableDescriptor descriptor = TableDescriptorBuilder.newBuilder(tableName)
                                                            .setColumnFamily(ColumnFamilyDescriptorBuilder.of(family))
                                                            .build();
-        runAsAdmin(admin -> {
+        runAsAdmin(TableExistsException.class, admin -> {
             if (splits.length != 0) {
                 admin.createTable(descriptor, splits);
             } else {
