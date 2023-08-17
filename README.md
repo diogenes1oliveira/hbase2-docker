@@ -2,6 +2,7 @@
 
 [![Build Status](https://github.com/diogenes1oliveira/hbase2-docker/actions/workflows/main.yml/badge.svg)](https://github.com/diogenes1oliveira/hbase2-docker/actions)
 [![Docker Hub](https://img.shields.io/docker/v/diogenes1oliveira/hbase2-docker)](https://hub.docker.com/r/diogenes1oliveira)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.diogenes1oliveira/hbase2-testcontainers?versionPrefix=0.)]([https://google.com](https://mvnrepository.com/artifact/io.github.diogenes1oliveira/hbase2-testcontainers))
 [![License](https://img.shields.io/github/license/diogenes1oliveira/hbase2-docker)](https://github.com/diogenes1oliveira/hbase2-docker/blob/main/LICENSE)
 
 Dockerized HBase 2 for use in tests
@@ -10,128 +11,175 @@ Dockerized HBase 2 for use in tests
 
 Dockerizing HBase is traditionally a quite tricky task because of its sensitivity towards
 ports, specific hostnames, not to mention insufficient official documentation. The common
-advice is to just run the standalone mode locally or update the `/etc/hosts` when running
-in a Docker container. Which, of course, doesn't help either if you want to run in the
-distributed mode.
+advice is to just run the standalone mode locally or manually update the `/etc/hosts` with
+the container IP. Which doesn't help either if you want to run in the
+distributed mode or if you're not running with the standard local Docker socket in a Linux (e.g., Windows).
 
-Here I implement a Docker image and a docker-compose distributed cluster to make this
-method easier:
+Here I implement a Docker image to make this method easier:
 
-- The standalone mode binds to `localhost`, so local application development defaults
-  will work without hiss;
-- The cluster stack binds to `*.localhost` hostnames, so in most Linuxes this will
-  work properly without even setting up the `/etc/hosts`;
-- The ports are configurable and properly limited;
+- The container binds to `localhost` by default, so local application development defaults
+  will work without hiss. You can also export `HBASE2__DOCKER_HOSTNAME=some.other.host` to
+  override this;
+- The ports are configurable and properly limited. You can also set different ports inside
+  and outside the container;
 - Running within Docker will assure proper isolation and cleanup of logs and other
   temporary files;
-- We can set HBase configuration with `$HBASE_CONF_*` environment variables instead of
+- We can set HBase configuration with `$HBASE_SITE_*` environment variables instead of
   having to fiddle around with XMLs.
 
-This stack is mostly based on the repository https://github.com/big-data-europe/docker-hbase.
+This stack was initially based on the repository https://github.com/big-data-europe/docker-hbase.
 
-## Running
+## Docker image
 
-### Standalone mode
+The Docker image is available in [Docker Hub](https://hub.docker.com/r/diogenes1oliveira/hbase2-docker/).
+
+### Default ports and hostname
 
 You can run a standalone HBase container directly via `docker run`:
 
 ```shell
-$ docker run -it --rm \
+$ docker run -d --rm --name hbase2-docker \
     -p 2181:2181 -p 16000:16000 -p 16010:16010 -p 16020:16020 -p 16030:16030 \
-    diogenes1oliveira/hbase2-docker:0.1.6-hbase2.0.2
+    diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
 ```
 
-Or you can use the convenience Makefile to start and stop it:
+You can also use the [docker-compose.yml](./docker-compose.yml) included in this repo:
 
 ```shell
-$ make start
-$ make kill
+$ docker compose up || docker-compose up
 ```
 
-The command above will start a standalone HBase cluster with all the necessary ports
-bound to the local interface and with all hostnames bound and advertised to `localhost`.
+The commands above will start a standalone HBase cluster with all the necessary ports
+bound to the local interface and with all hostnames advertised to `localhost`.
 
 To get more details about the standalone mode, check https://hbase.apache.org/book.html#standalone.
 
-### Cluster Mode
-
-You can run a full Hadoop and HBase cluster using the included [docker-compose.yml](./docker-compose.yml).
-
-```shell
-$ make cluster/up
-$ make cluster/rm
-```
-
-The stack binds and advertises the following hostnames:
-
-- **Master**: `hbase-master.localhost`
-- **Region Server**: `hbase-region1.localhost`
-- **ZooKeeper**: `zookeeper.localhost`
-
-In most Linuxes any `.localhost` host resolves to `127.0.0.1`, so if this is not your case,
-you'll have to update the `/etc/hosts` manually.
-
-To get more details about the cluster mode, check https://hbase.apache.org/book.html#fully_dist.
-
 ### Configuration
 
-The [entrypoint](./bin/docker-entrypoint.sh) script maps environment variables with the prefix
-`HBASE_CONF_` by removing the prefix and replacing dots by underscores:
+The configuration is made through environment variables.
+
+#### Process configurations
+
+| Name                                 | Default value                                          | Description                                                                                                                                                                                                                           |
+| ------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `$HBASE_MANAGES_ZK`                  | `true`                                                 | run an embedded zookeeper. required on standalone mode                                                                                                                                                                                |
+| `$HBASE_COMMAND`                     | `master`                                               | command to execute (`master`, `regionserver`, etc). The `master` value when in standalone mode executes both `master`and `regionserver` command                                                                                       |
+| `$HBASE_RUN_AS`                      | `hbase`                                                | user to run the hbase process as                                                                                                                                                                                                      |
+| `$HBASE_ENV_FILE`                    | -                                                      | path to a .env file to be loaded when starting the container                                                                                                                                                                          |
+| `$HBASE_ENV_FILE_WAIT`               | `10`                                                   | seconds to wait for the .env to show up within the container                                                                                                                                                                          |
+| `$HBASE_HEALTHCHECK_EXPECTED_STATUS` | `1 active master, 0 backup masters, 1 servers, 0 dead` | string to lookup within the `status` command in the healthcheck                                                                                                                                                                       |
+| `$HBASE_BACKGROUND_PIDS_FILE`        | `/var/run/hbase2-docker.pids`                          | file containing the PIDs of supporting background processes                                                                                                                                                                           |
+| `$HBASE_PORT_MAPPINGS`               | -                                                      | set of comma or whitespace-separated mappings `SOURCE_PORT:TARGET_PORT` to map a source port to another. For each mapping, a background process will be started to direct the TCP traffic reaching the source port to the target port |
+
+#### HBase configurations
+
+The [hadoop-config-from-env](./bin/hadoop-config-from-env) script maps environment variables with the prefix
+`HBASE_SITE_` by removing the prefix and replacing dots by underscores. The resulting configurations are saved to `/etc/hbase/hbase-site.xml`
+and `/etc/hbase/hbase-site.properties`:
 
 ```xml
-<!-- HBASE_CONF_some_config=value -->
+<!-- HBASE_SITE_some_config=value -->
 <property>
     <name>some.config</name>
     <value>value</value>
 </property>
 ```
 
-The default configuration set [hbase-config-build.sh](./bin/hbase-config-build.sh) is as such:
+Core configurations:
 
-| Name                                     | Default value                             | Role |
-| ---------------------------------------- | ----------------------------------------- | ---- |
-| `$HBASE_ROLE`                            | `standalone`                              |      |
-| `$HBASE_MANAGES_ZK`                      | `true` if standalone, else `false`        |      |
-| `hbase.rootdir`                          | `/data/hbase`                             | all  |
-| `hbase.unsafe.stream.capability.enforce` | `false` if standalone, else `true`        |      |
-| `hbase.cluster.distributed`              | `false` if standalone, else `true`        |      |
-| `hbase.zookeeper.property.dataDir`       | `/data/zookeeper` if standalone           |      |
-| `hbase.zookeeper.peerport`               | `2888`                                    |      |
-| `hbase.zookeeper.leaderport`             | `3888`                                    |      |
-| `hbase.zookeeper.property.clientPort`    | `2181`                                    |      |
-| `hbase.master.ipc.address`               | `0.0.0.0`                                 |      |
-| `hbase.regionserver.ipc.address`         | `0.0.0.0` if regionserver or standalone   |      |
-| `hbase.master.hostname`                  | `localhost`                               |      |
-| `hbase.master.port`                      | `16000`                                   |      |
-| `hbase.master.info.port`                 | `16010`                                   |      |
-| `hbase.regionserver.hostname`            | `localhost` if regionserver or standalone |      |
-| `hbase.regionserver.port`                | `16020` if regionserver or standalone     |      |
-| `hbase.regionserver.info.port`           | `160030` if regionserver or standalone    |      |
+| Environment variable name                            | HBase configuration                      | Default value        | Description                                                          |
+| ---------------------------------------------------- | ---------------------------------------- | -------------------- | -------------------------------------------------------------------- |
+| `$HBASE_SITE_hbase_zookeeper_property_dataDir`       | `hbase.zookeeper.property.dataDir`       | `/var/lib/zookeeper` | path to store the zookeeper data                                     |
+| `$HBASE_SITE_hbase_zookeeper_property_clientPort`    | `hbase.zookeeper.property.clientPort`    | `2181`               | port the embedded zookeeper should bind to                           |
+| `$HBASE_SITE_hbase_rootdir`                          | `hbase.rootdir`                          | `/var/lib/hbase`     | path to store the HBase data                                         |
+| `$HBASE_SITE_hbase_cluster_distributed`              | `hbase.cluster.distributed`              | `false`              | whether to run in standalone mode (`false`) or cluster mode (`true`) |
+| `$HBASE_SITE_hbase_unsafe_stream_capability_enforce` | `hbase.unsafe.stream.capability.enforce` | `false`              | set to false if the HBase data is stored in the local filesystem     |
+| `$HBASE_SITE_hbase_master_hostname`                  | `hbase.master.hostname`                  | `localhost`          | advertised hostname for the master node                              |
+| `$HBASE_SITE_hbase_master_port`                      | `hbase.master.port`                      | `16000`              | advertised port for the master node                                  |
+| `$HBASE_SITE_hbase_master`                           | `hbase.master`                           | `localhost:16000`    | advertised address for the master node                               |
+| `$HBASE_SITE_hbase_master_info_port`                 | `hbase.master.info.port`                 | `16010`              | port for the master UI interface                                     |
+| `$HBASE_SITE_hbase_regionserver_hostname`            | `hbase.regionserver.hostname`            | `localhost`          | advertised hostname for the region server node                       |
+| `$HBASE_SITE_hbase_regionserver_port`                | `hbase.regionserver.port`                | `16020`              | advertised port for the region server node                           |
+| `$HBASE_SITE_hbase_regionserver_info_port`           | `hbase.regionserver.info.port`           | `16030`              | port for the region server UI interface                              |
+| `$HBASE_SITE_hbase_zookeeper_quorum`                 | `hbase.zookeeper.quorum`                 | `localhost:2181`     | comma-separated addresses of the zookeeper cluster                   |
 
-Additionally, the following configs are built by the [entrypoint](./docker-entrypoint.sh):
+Extra configurations:
 
-| Name                     | Default value                                                     |
-| ------------------------ | ----------------------------------------------------------------- |
-| `hbase.master`           | `${hbase.master.hostname}:${hbase.master.port}`                   |
-| `hbase.zookeeper.quorum` | `${hbase.master.hostname}:${hbase.zookeeper.property.clientPort}` |
+| Environment variable name                    | HBase configuration              | Default value |
+| -------------------------------------------- | -------------------------------- | ------------- |
+| `$HBASE_SITE_hbase_master_ipc_address`       | `hbase.master.ipc.address`       | `0.0.0.0`     |
+| `$HBASE_SITE_hbase_regionserver_ipc_address` | `hbase.regionserver.ipc.address` | `0.0.0.0`     |
+| `$HBASE_SITE_hbase_client_operation_timeout` | `hbase.client.operation.timeout` | `2000`        |
+| `$HBASE_SITE_hbase_rpc_timeout`              | `hbase.rpc.timeout`              | `500`         |
+| `$HBASE_SITE_hbase_client_retries_number`    | `hbase.client.retries.number`    | `2`           |
+| `$HBASE_SITE_zookeeper_session_timeout`      | `zookeeper.session.timeout`      | `1000`        |
+| `$HBASE_SITE_zookeeper_recovery_retry`       | `zookeeper.recovery.retry`       | `2`           |
+| `$HBASE_SITE_hbase_client_pause`             | `hbase.client.pause`             | `100`         |
 
-### Configuring binding ports
+#### Non-default ports
 
-Configurations of ports are specially sensitive to HBase. If you're going to change
-them, be sure to:
+You must change the environment variables corresponding to the advertised ports and addresses, and also
+bind the same port both inside and outside the container:
 
-- You have to bind the same ports both inside and outside Docker itself in `-p PORT:PORT`;
-- Set the same port in the environment variable `$HBASE_CONF_..._port`.
+```shell
+$ docker run -d --rm --name hbase2-docker \
+    --publish 18181:18181 \
+    --publish 18000:18000 \
+    --publish 18010:18010 \
+    --publish 18020:18020 \
+    --publish 18030:18030 \
+    --env HBASE_SITE_hbase_zookeeper_property_clientPort=18181 \
+    --env HBASE_SITE_hbase_zookeeper_quorum=localhost:18181 \
+    --env HBASE_SITE_hbase_master_port=18000 \
+    --env HBASE_SITE_hbase_master=localhost:18000 \
+    --env HBASE_SITE_hbase_master_info_port=18010 \
+    --env HBASE_SITE_hbase_regionserver_port=18020 \
+    --env HBASE_SITE_hbase_regionserver_info_port=18030 \
+    diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
+```
 
-### Configuring hostnames
+If you won't bind the same port inside and outside the container, you also have to set `$HBASE_PORT_MAPPINGS` to
+remap the container port to the advertised ports in the HBase configuration:
 
-Configurations of hostnames are specially sensitive to HBase and the containers need to be
-accessible both inside and outside Docker with the same hostname. By default the container
-binds them all to `localhost`, so if you're going to change any of them, be sure to:
+```shell
+$ docker run -d --rm --name hbase2-docker \
+    --publish 18181:2181 \
+    --publish 18000:16000 \
+    --publish 18010:16010 \
+    --publish 18020:16020 \
+    --publish 18030:16030 \
+    --env HBASE_PORT_MAPPINGS='2181:18181 16000:18000 16010:18010 16020:18020 16030:18030' \
+    --env HBASE_SITE_hbase_zookeeper_property_clientPort=18181 \
+    --env HBASE_SITE_hbase_zookeeper_quorum=localhost:18181 \
+    --env HBASE_SITE_hbase_master_port=18000 \
+    --env HBASE_SITE_hbase_master=localhost:18000 \
+    --env HBASE_SITE_hbase_master_info_port=18010 \
+    --env HBASE_SITE_hbase_regionserver_port=18020 \
+    --env HBASE_SITE_hbase_regionserver_info_port=18030 \
+    diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
+```
 
-- The new hostname maps locally to `127.0.0.1` via `/etc/hosts` or `resolv.conf`;
-- The same hostname is accessible inside the container via `--add-host HOSTNAME:127.0.0.1`;
-- Set the same hostname in the environment variable `$HBASE_CONF_..._port`.
+#### Non-default hostname
+
+First of all, make sure the hostname you're gonna use is resolvable in the client machine. For instance, if you're using
+a remote Docker instance, you'll need to use the hostname of the machine. In Docker Desktop, you'll probably need to use
+`host.docker.internal` or `kubernetes.docker.internal`.
+
+Then, you need to change the environment variables corresponding to the advertised hostnames and addresses, and also
+add the custom host to the containers `/etc/hosts`:
+
+```shell
+$ docker run -d --rm --name hbase2-docker \
+    --add-host machine.example.com=127.0.0.1 \
+    --publish 2181:2181 \
+    --publish 16000:16000 \
+    --publish 16010:16010 \
+    --publish 16020:16020 \
+    --publish 16030:16030 \
+    --env HBASE_SITE_hbase_zookeeper_quorum=machine.example.com:18181 \
+    --env HBASE_SITE_hbase_master=machine.example.com:18000 \
+    diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
+```
 
 ## Development
 
