@@ -1,4 +1,4 @@
-package io.github.diogenes1oliveira.hbase2;
+package io.github.diogenes1oliveira.hbase2.interfaces;
 
 import com.github.dockerjava.api.DockerClient;
 

@@ -3,6 +3,7 @@ package io.github.diogenes1oliveira.hbase2;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InfoCmd;
 import com.github.dockerjava.api.model.Info;
+import io.github.diogenes1oliveira.hbase2.interfaces.DockerHostnameFunction;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

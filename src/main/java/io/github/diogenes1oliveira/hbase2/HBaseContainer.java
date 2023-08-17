@@ -1,9 +1,16 @@
 package io.github.diogenes1oliveira.hbase2;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
+import io.github.diogenes1oliveira.hbase2.interfaces.CheckedConsumer;
+import io.github.diogenes1oliveira.hbase2.interfaces.CheckedFunction;
+import io.github.diogenes1oliveira.hbase2.interfaces.DockerHostnameFunction;
+import io.github.diogenes1oliveira.hbase2.interfaces.IOConsumer;
+import io.github.diogenes1oliveira.hbase2.interfaces.IOFunction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.TableNotEnabledException;
+import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
 import org.apache.hadoop.hbase.client.Connection;
@@ -37,6 +44,7 @@ import static java.util.Arrays.stream;
 /**
  * Testcontainer for HBase 2
  */
+@SuppressWarnings({"unchecked", "UnusedReturnValue", "CodeBlock2Expr", "Convert2MethodRef"})
 public class HBaseContainer extends GenericContainer<HBaseContainer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(HBaseContainer.class);
 
@@ -173,7 +181,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         TableDescriptor descriptor = TableDescriptorBuilder.newBuilder(tableName)
                                                            .setColumnFamily(ColumnFamilyDescriptorBuilder.of(family))
                                                            .build();
-        doWithRetry((_connection, admin) -> {
+        runAsAdmin(admin -> {
             if (splits.length != 0) {
                 admin.createTable(descriptor, splits);
             } else {
@@ -189,13 +197,9 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     }
 
     public void truncateTable(TableName tableName) {
-        doWithRetry((_connection, admin) -> {
-            if (admin.isTableEnabled(tableName)) {
-                admin.disableTable(tableName);
-            }
-            admin.truncateTable(tableName, true);
-            admin.enableTable(tableName);
-        });
+        runAsAdmin(admin -> admin.disableTable(tableName), TableNotEnabledException.class, TableNotFoundException.class);
+        runAsAdmin(admin -> admin.truncateTable(tableName, true));
+        runAsAdmin(admin -> admin.enableTable(tableName));
     }
 
     public void truncateTable(String name) {
@@ -203,61 +207,74 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     }
 
     public void dropTable(TableName tableName) {
-        doWithRetry((_connection, admin) -> {
-            if (admin.isTableEnabled(tableName)) {
-                admin.disableTable(tableName);
-            }
-            admin.deleteTable(tableName);
-        });
+        runAsAdmin(admin -> admin.disableTable(tableName), TableNotEnabledException.class, TableNotFoundException.class);
+        runAsAdmin(admin -> admin.deleteTable(tableName), TableNotFoundException.class);
+    }
+
+    public void dropTable(String name) {
+        dropTable(TableName.valueOf(name));
     }
 
     public void dropTables() {
-        doWithRetry((_connection, admin) -> {
-            for (TableName tableName : admin.listTableNames()) {
-                dropTable(tableName);
-            }
+        TableName[] tableNames = getAsAdmin(null, admin -> admin.listTableNames());
+        for (TableName tableName : tableNames) {
+            dropTable(tableName);
+        }
+    }
+
+
+    public <T> T get(Class<? extends Exception> ignoredException, T defaultValue, CheckedFunction<Connection, T> function) {
+        return HBaseContainerUtils.getWithRetry(ignoredException, defaultValue, timeoutNs, this::getConnection, (connection, admin) -> {
+            return function.apply(connection);
         });
     }
 
-    public static void uncheckedSleep(long ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (InterruptedException e) {
-            LOGGER.warn("interrupted while waiting", e);
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("interrupted while waiting", e);
+
+    public <T> T get(IOFunction<Connection, T> function) throws IOException {
+        try (Connection connection = getConnection()) {
+            return function.apply(connection);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public <T> T getWithRetry(CheckedBiFunction<Connection, Admin, T> function) {
-        long t0 = System.nanoTime();
-
-        while (true) {
-            try {
-                try (Connection connection = getConnection(); Admin admin = connection.getAdmin()) {
-                    return function.apply(connection, admin);
-                }
-            } catch (InterruptedException e) {
-                LOGGER.warn("interrupted", e);
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("interrupted", e);
-            } catch (Exception e) {
-                if (System.nanoTime() - t0 > timeoutNs) {
-                    throw new RuntimeException("Timeout exceeded", e);
-                }
-                LOGGER.warn("failure, will retry again in 1s", e);
-            }
-
-            uncheckedSleep(1000);
-        }
+    public void run(Class<? extends Exception> ignoredException, CheckedConsumer<Connection> consumer) {
+        HBaseContainerUtils.runWithRetry(ignoredException, timeoutNs, this::getConnection, (connection, admin) -> {
+            consumer.accept(connection);
+        });
     }
 
-    public void doWithRetry(CheckedBiConsumer<Connection, Admin> consumer) {
-        getWithRetry((connection, admin) -> {
-            consumer.accept(connection, admin);
+    public void run(IOConsumer<Connection> consumer) throws IOException {
+        get(connection -> {
+            consumer.accept(connection);
             return null;
         });
+    }
+
+    public <T> T getAsAdmin(Class<? extends Exception> ignoredException, T defaultValue, CheckedFunction<Admin, T> function) {
+        return HBaseContainerUtils.getWithRetry(ignoredException, defaultValue, timeoutNs, this::getConnection, (connection, admin) -> {
+            return function.apply(admin);
+        });
+    }
+
+    public <T> T getAsAdmin(T defaultValue, CheckedFunction<Admin, T> function, Class<? extends Exception>... ignoredExceptions) {
+        return HBaseContainerUtils.getWithRetry(ignoredExceptions, defaultValue, timeoutNs, this::getConnection, (connection, admin) -> {
+            return function.apply(admin);
+        });
+    }
+
+    public void runAsAdmin(Class<? extends Exception> ignoredException, CheckedConsumer<Admin> consumer) {
+        getAsAdmin(ignoredException, null, admin -> {
+            consumer.accept(admin);
+            return null;
+        });
+    }
+
+    public void runAsAdmin(CheckedConsumer<Admin> consumer, Class<? extends Exception>... ignoredExceptions) {
+        getAsAdmin(null, admin -> {
+            consumer.accept(admin);
+            return null;
+        }, ignoredExceptions);
     }
 
     private static String asEnvContents(Map<String, String> env) {

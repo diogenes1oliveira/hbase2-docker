@@ -1,7 +1,7 @@
-package io.github.diogenes1oliveira.hbase2;
+package io.github.diogenes1oliveira.hbase2.interfaces;
 
 /**
- * Function interface alternative to Java's {@link java.util.function.BiFunction} that can throw typed exceptions
+ * Functional interface alternative to Java's {@link java.util.function.BiFunction} that can throw typed exceptions
  *
  * @param <T> the type of the first argument to the function
  * @param <U> the type of the second argument to the function
