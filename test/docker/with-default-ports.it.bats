@@ -12,7 +12,7 @@ setup() {
 }
 
 @test 'should connect for localhost and default ports' {
-    export HBASE_DOCKER_HOSTNAME=localhost
+    export HBASE2__DOCKER_HOSTNAME=localhost
     _docker_compose_up_and_wait
 
     _hbase_shell 'status'
@@ -21,8 +21,8 @@ setup() {
 }
 
 @test 'should connect for machine hostname and default ports' {
-    export HBASE_DOCKER_HOSTNAME="$(hostname)"
-    echo >&3 "# INFO: export HBASE_DOCKER_HOSTNAME=$HBASE_DOCKER_HOSTNAME"
+    export HBASE2__DOCKER_HOSTNAME="$(hostname)"
+    echo >&3 "# INFO: export HBASE2__DOCKER_HOSTNAME=$HBASE2__DOCKER_HOSTNAME"
     _docker_compose_up_and_wait
 
     _hbase_shell 'status'

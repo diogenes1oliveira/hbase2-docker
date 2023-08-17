@@ -4,20 +4,20 @@ services:
   hbase:
     image: ${IMAGE_REPO:-diogenes1oliveira/hbase2-docker}:${IMAGE_TAG:-latest}
     extra_hosts:
-      - ${HBASE_DOCKER_HOSTNAME:-localhost}:127.0.0.1
+      - ${HBASE2__DOCKER_HOSTNAME:-localhost}:127.0.0.1
     environment:
       - HBASE_ROLE=master
       - HBASE_MANAGES_ZK=true
       - HBASE_SITE_hbase_cluster_distributed=false
       - HBASE_SITE_hbase_zookeeper_property_clientPort=${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
-      - HBASE_SITE_hbase_zookeeper_quorum=${HBASE_DOCKER_HOSTNAME:-localhost}:${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
+      - HBASE_SITE_hbase_zookeeper_quorum=${HBASE2__DOCKER_HOSTNAME:-localhost}:${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
       - HBASE_SITE_hbase_master_port=${HBASE_SITE_hbase_master_port:-16000}
       - HBASE_SITE_hbase_master_info_port=${HBASE_SITE_hbase_master_info_port:-16010}
-      - HBASE_SITE_hbase_master_hostname=${HBASE_SITE_hbase_master_hostname:-${HBASE_DOCKER_HOSTNAME:-localhost}}
-      - HBASE_SITE_hbase_master=${HBASE_SITE_hbase_master_hostname:-${HBASE_DOCKER_HOSTNAME:-localhost}}:${HBASE_SITE_hbase_master_port:-16000}
+      - HBASE_SITE_hbase_master_hostname=${HBASE_SITE_hbase_master_hostname:-${HBASE2__DOCKER_HOSTNAME:-localhost}}
+      - HBASE_SITE_hbase_master=${HBASE_SITE_hbase_master_hostname:-${HBASE2__DOCKER_HOSTNAME:-localhost}}:${HBASE_SITE_hbase_master_port:-16000}
       - HBASE_SITE_hbase_regionserver_port=${HBASE_SITE_hbase_regionserver_port:-16020}
       - HBASE_SITE_hbase_regionserver_info_port=${HBASE_SITE_hbase_regionserver_info_port:-16030}
-      - HBASE_SITE_hbase_regionserver_hostname=${HBASE_DOCKER_HOSTNAME:-localhost}
+      - HBASE_SITE_hbase_regionserver_hostname=${HBASE2__DOCKER_HOSTNAME:-localhost}
       - >-
         HBASE_PORT_MAPPINGS=
           2181:${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
