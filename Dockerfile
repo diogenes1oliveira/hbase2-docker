@@ -45,6 +45,7 @@ ENV PATH="$HBASE_HOME/bin:$PATH" \
     HBASE_ENV_FILE_WAIT=10 \
     HBASE_HEALTHCHECK_EXPECTED_STATUS='1 active master, 0 backup masters, 1 servers, 0 dead' \
     HBASE_PORT_MAPPINGS= \
+    HBASE_HEALTHCHECK_PORT=17000 \
     HBASE_BACKGROUND_PIDS_FILE=/var/run/hbase2-docker.pids \
     HBASE_SECURITY_LOGGER=INFO,console \
     # core settings

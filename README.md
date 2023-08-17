@@ -39,7 +39,7 @@ You can run a standalone HBase container directly via `docker run`:
 
 ```shell
 $ docker run -d --rm --name hbase2-docker \
-    -p 2181:2181 -p 16000:16000 -p 16010:16010 -p 16020:16020 -p 16030:16030 \
+    -p 2181:2181 -p 16000:16000 -p 16010:16010 -p 16020:16020 -p 16030:16030 -p 17000:17000 \
     diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
 ```
 
@@ -50,7 +50,8 @@ $ docker compose up || docker-compose up
 ```
 
 The commands above will start a standalone HBase cluster with all the necessary ports
-bound to the local interface and with all hostnames advertised to `localhost`.
+bound to the local interface and with all hostnames advertised to `localhost`. The Master Web UI is accessible at
+http://localhost:16010/ and a custom health check page is available at http://localhost:17000/.
 
 To get more details about the standalone mode, check https://hbase.apache.org/book.html#standalone.
 
@@ -70,6 +71,7 @@ The configuration is made through environment variables.
 | `$HBASE_HEALTHCHECK_EXPECTED_STATUS` | `1 active master, 0 backup masters, 1 servers, 0 dead` | string to lookup within the `status` command in the healthcheck                                                                                                                                                                       |
 | `$HBASE_BACKGROUND_PIDS_FILE`        | `/var/run/hbase2-docker.pids`                          | file containing the PIDs of supporting background processes                                                                                                                                                                           |
 | `$HBASE_PORT_MAPPINGS`               | -                                                      | set of comma or whitespace-separated mappings `SOURCE_PORT:TARGET_PORT` to map a source port to another. For each mapping, a background process will be started to direct the TCP traffic reaching the source port to the target port |
+| `$HBASE_HEALTHCHECK_PORT`            | `17000`                                                | port to bind the healthcheck server to                                                                                                                                                                                                |
 
 #### HBase configurations
 
@@ -149,6 +151,7 @@ $ docker run -d --rm --name hbase2-docker \
     --publish 18010:18010 \
     --publish 18020:18020 \
     --publish 18030:18030 \
+    --publish 19000:19000 \
     --env HBASE_SITE_hbase_zookeeper_property_clientPort=18181 \
     --env HBASE_SITE_hbase_zookeeper_quorum=localhost:18181 \
     --env HBASE_SITE_hbase_master_port=18000 \
@@ -156,6 +159,7 @@ $ docker run -d --rm --name hbase2-docker \
     --env HBASE_SITE_hbase_master_info_port=18010 \
     --env HBASE_SITE_hbase_regionserver_port=18020 \
     --env HBASE_SITE_hbase_regionserver_info_port=18030 \
+    --env HBASE_HEALTHCHECK_PORT=19000 \
     diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
 ```
 
@@ -169,7 +173,8 @@ $ docker run -d --rm --name hbase2-docker \
     --publish 18010:16010 \
     --publish 18020:16020 \
     --publish 18030:16030 \
-    --env HBASE_PORT_MAPPINGS='2181:18181 16000:18000 16010:18010 16020:18020 16030:18030' \
+    --publish 19000:17000 \
+    --env HBASE_PORT_MAPPINGS='2181:18181 16000:18000 16010:18010 16020:18020 16030:18030 17000:19000' \
     --env HBASE_SITE_hbase_zookeeper_property_clientPort=18181 \
     --env HBASE_SITE_hbase_zookeeper_quorum=localhost:18181 \
     --env HBASE_SITE_hbase_master_port=18000 \
@@ -177,6 +182,7 @@ $ docker run -d --rm --name hbase2-docker \
     --env HBASE_SITE_hbase_master_info_port=18010 \
     --env HBASE_SITE_hbase_regionserver_port=18020 \
     --env HBASE_SITE_hbase_regionserver_info_port=18030 \
+    --env HBASE_HEALTHCHECK_PORT=19000 \
     diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
 ```
 
@@ -197,6 +203,7 @@ $ docker run -d --rm --name hbase2-docker \
     --publish 16010:16010 \
     --publish 16020:16020 \
     --publish 16030:16030 \
+    --publish 17000:17000 \
     --env HBASE_SITE_hbase_zookeeper_quorum=machine.example.com:2181 \
     --env HBASE_SITE_hbase_master=machine.example.com:16000 \
     diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2

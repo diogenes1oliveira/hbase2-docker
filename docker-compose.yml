@@ -25,12 +25,14 @@ services:
           16010:${HBASE_SITE_hbase_master_info_port:-16010}
           16020:${HBASE_SITE_hbase_regionserver_port:-16020}
           16030:${HBASE_SITE_hbase_regionserver_info_port:-16030}
+          17000:${HBASE_HEALTHCHECK_PORT:-17000}
     ports:
       - ${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}:2181
       - ${HBASE_SITE_hbase_master_port:-16000}:16000
       - ${HBASE_SITE_hbase_master_info_port:-16010}:16010
       - ${HBASE_SITE_hbase_regionserver_port:-16020}:16020
       - ${HBASE_SITE_hbase_regionserver_info_port:-16030}:16030
+      - ${HBASE_HEALTHCHECK_PORT:-17000}:17000
     volumes:
       - conf:/etc/hbase/
     healthcheck:

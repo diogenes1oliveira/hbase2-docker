@@ -1,30 +1,82 @@
 #!/usr/bin/env bash
 
-set -uo pipefail
+set -euo pipefail
+SCRIPT="$0"
+
+usage() {
+    cat <<eof
+Checks the health of all the container processes
+
+Usage:
+    $SCRIPT [ MODE ]
+
+Options:
+    MODE    shell or http (default: shell)
+            The shell mode prints a human-friendly output to the stdout and
+                exits with status 1 if unhealthy.
+            The http mode prints to the stdout in the form of HTTP/1.1 data with
+                HTTP 200 for healthy and HTTP 503 for unhealthy, always exiting with status 0.
+eof
+}
+
+OUTPUT=''
+ERROR=
+MODE=shell
 
 main() {
-    local exit_code=0
-
-    if [ "$HBASE_MANAGES_ZK" = 'true' ]; then
-        check_zookeeper_port || exit_code=1
+    if [ "${HBASE_MANAGES_ZK:-}" = 'true' ]; then
+        check_zookeeper_port
     fi
 
-    if [ "$HBASE_SITE_hbase_cluster_distributed" = 'false' ]; then
-        check_master_port || exit_code=1
-        check_regionserver_port || exit_code=1
+    if [ "${HBASE_SITE_hbase_cluster_distributed:-}" = 'false' ]; then
+        check_master_port
+        check_regionserver_port
     fi
 
-    check_background_pids || exit_code=1
+    check_background_pids
 
     if [ -n "${HBASE_HEALTHCHECK_EXPECTED_STATUS:-}" ]; then
-        if [ "$exit_code" -eq 0 ]; then
-            check_hbase_status || exit_code=1
+        if [ -z "$ERROR" ]; then
+            check_hbase_status
         else
             echo >&2 'INFO: skipped status check, healthcheck already failed'
         fi
     fi
 
-    exit "$exit_code"
+    case "$MODE" in
+    shell )
+        print_shell ;;
+    html )
+        print_html ;;
+    esac
+}
+
+print_shell() {
+    printf '%s' "$OUTPUT"
+    [ -z "$ERROR" ]
+}
+
+print_html() {
+    if [ -z "$ERROR" ]; then
+        printf '%s\r\n' 'HTTP/1.1 200 OK'
+    else
+        printf '%s\r\n' 'HTTP/1.1 503 Service Unavailable'
+    fi
+
+    printf '%s\r\n' 'Content-Type: text/plain; charset=UTF-8'
+    printf '%s\r\n' "Content-Length: ${#OUTPUT}"
+    printf '%s\r\n' ''
+
+    printf '%s' "$OUTPUT"
+}
+
+add_output() {
+    OUTPUT+="$1"
+    OUTPUT+=$'\n'
+}
+
+set_down() {
+    ERROR=yes
 }
 
 check_background_pids() {
@@ -36,59 +88,69 @@ check_background_pids() {
                 echo "pid($pid): UP"
             else
                 echo "pid($pid): DOWN"
-                return_code=1
+                set_down
             fi
         done
     fi
 
-    return "$return_code"
 }
 
 check_zookeeper_port() {
-    if nc -z localhost "$HBASE_SITE_hbase_zookeeper_property_clientPort"; then
-        echo "zookeeper($HBASE_SITE_hbase_zookeeper_property_clientPort): UP"
+    if nc -z localhost "${HBASE_SITE_hbase_zookeeper_property_clientPort:-}"; then
+        add_output "zookeeper(${HBASE_SITE_hbase_zookeeper_property_clientPort:-}): UP"
     else
-        echo "zookeeper($HBASE_SITE_hbase_zookeeper_property_clientPort): DOWN"
-        return 1
+        add_output "zookeeper(${HBASE_SITE_hbase_zookeeper_property_clientPort:-}): DOWN"
+        set_down
     fi
 }
 
 check_master_port() {
-    if nc -z localhost "$HBASE_SITE_hbase_master_port"; then
-        echo "master($HBASE_SITE_hbase_master_port): UP"
+    if nc -z localhost "${HBASE_SITE_hbase_master_port:-}"; then
+        add_output "master(${HBASE_SITE_hbase_master_port:-}): UP"
     else
-        echo "master($HBASE_SITE_hbase_master_port): DOWN"
-        return 1
+        add_output "master(${HBASE_SITE_hbase_master_port:-}): DOWN"
+        set_down
     fi
 }
 
 check_regionserver_port() {
-    if nc -z localhost "$HBASE_SITE_hbase_regionserver_port"; then
-        echo "regionserver($HBASE_SITE_hbase_regionserver_port): UP"
+    if nc -z localhost "${HBASE_SITE_hbase_regionserver_port:-}"; then
+        add_output "regionserver(${HBASE_SITE_hbase_regionserver_port:-}): UP"
     else
-        echo "regionserver($HBASE_SITE_hbase_regionserver_port): DOWN"
-        return 1
+        add_output "regionserver(${HBASE_SITE_hbase_regionserver_port:-}): DOWN"
+        set_down
     fi
 }
 
-check_hbase_status() (
-    set +e
-
-    local output="$(echo 'status' | hbase shell -n)"
-    local exit_code="$?"
-
-    if [ "$exit_code" -ne 0 ]; then
-        echo 'hbase: DOWN'
-        return 1
+check_hbase_status() {
+    if ! output="$(echo 'status' | hbase shell -n)"; then
+        add_output 'hbase: DOWN'
+        set_down
+        return
     fi
 
-    if ! grep -q "$HBASE_HEALTHCHECK_EXPECTED_STATUS" <<<"$output"; then
+    if ! grep -q "${HBASE_HEALTHCHECK_EXPECTED_STATUS:-}" <<<"$output"; then
         printf '%s\n' "$output" >&2
-        echo 'hbase: DOWN'
-        return 1
+        add_output 'hbase(status): DOWN'
+        set_down
+    else
+        add_output 'hbase(status): UP'
     fi
+}
 
-    echo 'hbase: UP'
-)
+for arg in "$@"; do
+    case "$arg" in
+    -h | --help )
+        usage && exit 0 ;;
+    esac
+done
+
+if [ "$#" -ge 1 ]; then
+    MODE="$1"
+fi
+
+if ! [[ "$MODE" =~ ^shell|html$ ]]; then
+    echo >&2 "ERROR: unrecognized mode '$MODE'"
+fi
 
 main
