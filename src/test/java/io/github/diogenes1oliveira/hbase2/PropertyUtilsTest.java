@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
 
@@ -98,5 +100,20 @@ class PropertyUtilsTest {
             setProperty("b", "second");
         }};
         assertThat(PropertyUtils.mergeProps(props1, props2), equalTo(expected));
+    }
+
+    @Test
+    void envToProps_ShouldMapEnvs() {
+        Map<String, String> env = new HashMap<String, String>() {{
+            put("HOME", "/home");
+            put("HBASE2__DOCKER_HOSTNAME", "some.host");
+        }};
+        Properties expected = new Properties() {{
+            setProperty("home", "/home");
+            setProperty("hbase2-docker.hostname", "some.host");
+        }};
+
+        Properties actual = PropertyUtils.envToProps(env);
+        assertThat(actual, equalTo(expected));
     }
 }
