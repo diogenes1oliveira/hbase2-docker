@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
-import org.testcontainers.shaded.com.google.common.base.Charsets;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -26,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static io.github.diogenes1oliveira.hbase2.PropertyUtils.envToProps;
 import static io.github.diogenes1oliveira.hbase2.PropertyUtils.getProp;
 import static io.github.diogenes1oliveira.hbase2.PropertyUtils.getProps;
 import static io.github.diogenes1oliveira.hbase2.PropertyUtils.getResourceProps;
@@ -74,14 +74,14 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         withEnv(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
 
         this.hostname = hostnameFunction.getHostname(this.getDockerClient());
-        if(!"localhost".equals(this.hostname)) {
+        if (!"localhost".equals(this.hostname)) {
             LOGGER.info("setting hostname {}=127.0.0.1", this.hostname);
             withExtraHost(hostname, "127.0.0.1");
         }
 
         this.timeoutNs = timeout.toNanos();
-        for(String propName: defaultProps.stringPropertyNames()) {
-            String envName = propToEnv(propName);
+        for (String propName : defaultProps.stringPropertyNames()) {
+            String envName = "HBASE_SITE_" + propToEnv(propName);
             withEnv(envName, defaultProps.getProperty(propName));
         }
         this.debug = debug;
@@ -294,7 +294,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         private DockerHostnameFunction hostnameFunction;
 
         public Builder() {
-            this(mergeProps(getHBase2DockerDefaultProps(), System.getProperties()));
+            this(mergeProps(getHBase2DockerDefaultProps(), envToProps(System.getenv()), System.getProperties()));
         }
 
         public Builder(Properties props) {
@@ -308,9 +308,11 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
             String hostnameMapper = getProp(props, "hbase2-docker.hostname-mapper", false);
 
             if (hostname != null) {
-                this.hostnameFunction = d -> hostname;
+                this.hostnameFunction = DockerHostnameFunctions.constant(hostname);
             } else if (hostnameMapper != null) {
                 this.hostnameFunction = DockerHostnameFunctions.fromPropertySpec(hostnameMapper);
+            } else {
+                this.hostnameFunction = DockerHostnameFunctions.localhost();
             }
         }
 

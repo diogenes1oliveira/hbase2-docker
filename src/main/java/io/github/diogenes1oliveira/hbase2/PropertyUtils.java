@@ -3,6 +3,7 @@ package io.github.diogenes1oliveira.hbase2;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.NoSuchFileException;
+import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
 
@@ -90,9 +91,37 @@ public final class PropertyUtils {
         return result;
     }
 
+    public static Properties envToProps(Map<String, String> env, boolean toLowerCase) {
+        Properties result = new Properties();
+
+        for (Map.Entry<String, String> entry : env.entrySet()) {
+            String envName = entry.getKey();
+            if(toLowerCase) {
+                envName = envName.toLowerCase();
+            }
+            String value = entry.getValue();
+
+            String propName = envToProp(envName);
+            result.setProperty(propName, value);
+        }
+
+        return result;
+    }
+
+    public static Properties envToProps(Map<String, String> env) {
+        return envToProps(env, true);
+    }
+
+    public static String envToProp(String envName) {
+        return envName.replace("___", "$")
+                      .replace("__", "-")
+                      .replace("_", ".")
+                      .replace("$", "_");
+    }
+
     public static String propToEnv(String propName) {
-        return "HBASE_SITE_" + propName.replace("_", "___")
-                                       .replace("-", "--")
-                                       .replace(".", "_");
+        return propName.replace("_", "___")
+                       .replace("-", "__")
+                       .replace(".", "_");
     }
 }
