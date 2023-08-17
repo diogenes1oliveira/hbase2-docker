@@ -4,12 +4,10 @@ on:
     paths-ignore:
       - "**.md"
       - LICENSE
-      - docker-compose.yml
   pull_request:
     paths-ignore:
       - "**.md"
       - LICENSE
-      - docker-compose.yml
 
 jobs:
   build:

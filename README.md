@@ -38,7 +38,7 @@ You can run a standalone HBase container directly via `docker run`:
 ```shell
 $ docker run -it --rm \
     -p 2181:2181 -p 16000:16000 -p 16010:16010 -p 16020:16020 -p 16030:16030 \
-    diogenes1oliveira/hbase2-docker:1.0.0-hbase2.0.2
+    diogenes1oliveira/hbase2-docker:0.1.6-hbase2.0.2
 ```
 
 Or you can use the convenience Makefile to start and stop it:
