@@ -176,8 +176,8 @@ $ docker run -d --rm --name hbase2-docker \
     --publish 16010:16010 \
     --publish 16020:16020 \
     --publish 16030:16030 \
-    --env HBASE_SITE_hbase_zookeeper_quorum=machine.example.com:18181 \
-    --env HBASE_SITE_hbase_master=machine.example.com:18000 \
+    --env HBASE_SITE_hbase_zookeeper_quorum=machine.example.com:2181 \
+    --env HBASE_SITE_hbase_master=machine.example.com:16000 \
     diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
 ```
 
