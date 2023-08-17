@@ -74,15 +74,36 @@ The configuration is made through environment variables.
 #### HBase configurations
 
 The [hadoop-config-from-env](./bin/hadoop-config-from-env) script maps environment variables with the prefix
-`HBASE_SITE_` by removing the prefix and replacing dots by underscores. The resulting configurations are saved to `/etc/hbase/hbase-site.xml`
+`HBASE_SITE_` by removing the prefix and replacing underscores by dots or dashes. The resulting configurations are saved to `/etc/hbase/hbase-site.xml`
 and `/etc/hbase/hbase-site.properties`:
 
+```shell
+$ export HBASE_SITE_config_with_dots=value
+$ export HBASE_SITE_config__with__dashes=value
+$ export HBASE_SITE_config___with___underscores=value
+```
+
 ```xml
-<!-- HBASE_SITE_some_config=value -->
+<!-- hbase-site.xml -->
 <property>
-    <name>some.config</name>
+    <name>config.with.dots</name>
     <value>value</value>
 </property>
+<property>
+    <name>config-with-dashes</name>
+    <value>value</value>
+</property>
+<property>
+    <name>config_with_underscores</name>
+    <value>value</value>
+</property>
+```
+
+```properties
+# hbase-site.properties
+config.with.dots=value
+config-with-dashes=value
+config_with_underscores=value
 ```
 
 Core configurations:
@@ -181,57 +202,49 @@ $ docker run -d --rm --name hbase2-docker \
     diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
 ```
 
-## Development
+### Testcontainers
 
-The following build variables are available. Be sure to set them consistently when
-executing multiple `make` commands:
+The [Testcontainers](https://testcontainers.com/) `io.github.diogenes1oliveira:hbase2-testcontainers` dependency is published to
+[Maven central](https://mvnrepository.com/artifact/io.github.diogenes1oliveira/hbase2-testcontainers) to aid using this container
+in Java integration tests:
 
-| Variable           | Default                                                         | Description                  |
-| ------------------ | --------------------------------------------------------------- | ---------------------------- |
-| `IMAGE_BASENAME`   | Extracted from the label `org.opencontainers.image.title`       | Image basename               |
-| `HBASE_VERSION`    | `2.0.2`                                                         | HBase version                |
-| `VCS_REF`          | `1.0.0`                                                         | Git tag, commit ID or branch |
-| `BUILD_VERSION`    | `${VCS_REF}-hbase${HBASE_VERSION}`                              | Image tag                    |
-| `BUILD_DATE`       | `1970-01-01T00:00:00Z`                                          | Current UTC timestamp        |
-| `REPO_HOME`        | Extracted from the label `org.opencontainers.image.url`         | Repository HTTP(S) URL       |
-| `REPO_DESCRIPTION` | Extracted from the label `org.opencontainers.image.description` | Repository description       |
-
-Of course, you can also directly run `docker build` and `docker push`, but then you'll
-have to set the build arguments directly. Check the aforementioned [Makefile](./Makefile)
-for more details.
-
-### Linting and Testing
-
-To run [hadolint](https://github.com/hadolint/hadolint) against the Dockerfile
-and [shellcheck](https://github.com/koalaman/shellcheck) against the shell scripts:
-
-```shell
-$ make lint
+```xml
+<!-- https://mvnrepository.com/artifact/io.github.diogenes1oliveira/hbase2-testcontainers -->
+<dependency>
+    <groupId>io.github.diogenes1oliveira</groupId>
+    <artifactId>hbase2-testcontainers</artifactId>
+    <version>0.2.0</version>
+</dependency>
 ```
 
-To run the [bats](https://github.com/bats-core/bats-core) tests:
+Then you can use it in your integration tests as such:
 
-```
-$ make test
-```
+```java
 
-### Building and Pushing
+import io.github.diogenes1oliveira.hbase2.HBaseContainer;
+import java.util.Properties;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-Use the phony target `build` in the [Makefile](./Makefile) to build the Docker
-image:
+@Testcontainers
+public class HBaseTest {
+    @Container
+    public HBaseContainer container = HBaseContainer.newBuilder().build();
 
-```shell
-$ make build VCS_REF=some-git-tag
-```
+    @Test
+    void shouldConnect() {
+        // Java properties
+        Properties props = container.getProps();
 
-To push to the Docker registry:
+        // Hadoop configuration object
+        Configuration conf = container.getConfiguration();
+        Connection connection = ConnectionFactory.createConnection(conf);
+    }
 
-```shell
-$ make push VCS_REF=some-git-tag
-```
+}
 
-To update the description in the Docker Hub:
-
-```
-$ make readme/push
 ```
