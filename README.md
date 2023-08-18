@@ -80,9 +80,9 @@ The [hadoop-config-from-env](./bin/hadoop-config-from-env) script maps environme
 and `/etc/hbase/hbase-site.properties`:
 
 ```shell
-$ export HBASE_SITE_config_with_dots=value
-$ export HBASE_SITE_config__with__dashes=value
-$ export HBASE_SITE_config___with___underscores=value
+$ export HBASE_SITE_CONFIG_WITH_DOTS=value
+$ export HBASE_SITE_CONFIG__WITH__DASHES=value
+$ export HBASE_SITE_TRIPLE___UNDERSCORE____ESCAPES=value
 ```
 
 ```xml
@@ -96,7 +96,7 @@ $ export HBASE_SITE_config___with___underscores=value
     <value>value</value>
 </property>
 <property>
-    <name>config_with_underscores</name>
+    <name>tripleUnderscore_escapes</name>
     <value>value</value>
 </property>
 ```
@@ -105,39 +105,39 @@ $ export HBASE_SITE_config___with___underscores=value
 # hbase-site.properties
 config.with.dots=value
 config-with-dashes=value
-config_with_underscores=value
+tripleUnderscore_escapes=value
 ```
 
 Core configurations:
 
 | Environment variable name                            | HBase configuration                      | Default value        | Description                                                          |
 | ---------------------------------------------------- | ---------------------------------------- | -------------------- | -------------------------------------------------------------------- |
-| `$HBASE_SITE_hbase_zookeeper_property_dataDir`       | `hbase.zookeeper.property.dataDir`       | `/var/lib/zookeeper` | path to store the zookeeper data                                     |
-| `$HBASE_SITE_hbase_zookeeper_property_clientPort`    | `hbase.zookeeper.property.clientPort`    | `2181`               | port the embedded zookeeper should bind to                           |
-| `$HBASE_SITE_hbase_rootdir`                          | `hbase.rootdir`                          | `/var/lib/hbase`     | path to store the HBase data                                         |
-| `$HBASE_SITE_hbase_cluster_distributed`              | `hbase.cluster.distributed`              | `false`              | whether to run in standalone mode (`false`) or cluster mode (`true`) |
-| `$HBASE_SITE_hbase_unsafe_stream_capability_enforce` | `hbase.unsafe.stream.capability.enforce` | `false`              | set to false if the HBase data is stored in the local filesystem     |
-| `$HBASE_SITE_hbase_master_hostname`                  | `hbase.master.hostname`                  | `localhost`          | advertised hostname for the master node                              |
-| `$HBASE_SITE_hbase_master_port`                      | `hbase.master.port`                      | `16000`              | advertised port for the master node                                  |
-| `$HBASE_SITE_hbase_master`                           | `hbase.master`                           | `localhost:16000`    | advertised address for the master node                               |
-| `$HBASE_SITE_hbase_master_info_port`                 | `hbase.master.info.port`                 | `16010`              | port for the master UI interface                                     |
-| `$HBASE_SITE_hbase_regionserver_hostname`            | `hbase.regionserver.hostname`            | `localhost`          | advertised hostname for the region server node                       |
-| `$HBASE_SITE_hbase_regionserver_port`                | `hbase.regionserver.port`                | `16020`              | advertised port for the region server node                           |
-| `$HBASE_SITE_hbase_regionserver_info_port`           | `hbase.regionserver.info.port`           | `16030`              | port for the region server UI interface                              |
-| `$HBASE_SITE_hbase_zookeeper_quorum`                 | `hbase.zookeeper.quorum`                 | `localhost:2181`     | comma-separated addresses of the zookeeper cluster                   |
+| `$HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_DATA___DIR`    | `hbase.zookeeper.property.dataDir`       | `/var/lib/zookeeper` | path to store the zookeeper data                                     |
+| `$HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT` | `hbase.zookeeper.property.clientPort`    | `2181`               | port the embedded zookeeper should bind to                           |
+| `$HBASE_SITE_HBASE_ROOTDIR`                          | `hbase.rootdir`                          | `/var/lib/hbase`     | path to store the HBase data                                         |
+| `$HBASE_SITE_HBASE_CLUSTER_DISTRIBUTED`              | `hbase.cluster.distributed`              | `false`              | whether to run in standalone mode (`false`) or cluster mode (`true`) |
+| `$HBASE_SITE_HBASE_UNSAFE_STREAM_CAPABILITY_ENFORCE` | `hbase.unsafe.stream.capability.enforce` | `false`              | set to false if the HBase data is stored in the local filesystem     |
+| `$HBASE_SITE_HBASE_MASTER_HOSTNAME`                  | `hbase.master.hostname`                  | `localhost`          | advertised hostname for the master node                              |
+| `$HBASE_SITE_HBASE_MASTER_PORT`                      | `hbase.master.port`                      | `16000`              | advertised port for the master node                                  |
+| `$HBASE_SITE_HBASE_MASTER`                           | `hbase.master`                           | `localhost:16000`    | advertised address for the master node                               |
+| `$HBASE_SITE_HBASE_MASTER_INFO_PORT`                 | `hbase.master.info.port`                 | `16010`              | port for the master UI interface                                     |
+| `$HBASE_SITE_HBASE_REGIONSERVER_HOSTNAME`            | `hbase.regionserver.hostname`            | `localhost`          | advertised hostname for the region server node                       |
+| `$HBASE_SITE_HBASE_REGIONSERVER_PORT`                | `hbase.regionserver.port`                | `16020`              | advertised port for the region server node                           |
+| `$HBASE_SITE_HBASE_REGIONSERVER_INFO_PORT`           | `hbase.regionserver.info.port`           | `16030`              | port for the region server UI interface                              |
+| `$HBASE_SITE_HBASE_ZOOKEEPER_QUORUM`                 | `hbase.zookeeper.quorum`                 | `localhost:2181`     | comma-separated addresses of the zookeeper cluster                   |
 
 Extra configurations:
 
 | Environment variable name                    | HBase configuration              | Default value |
 | -------------------------------------------- | -------------------------------- | ------------- |
-| `$HBASE_SITE_hbase_master_ipc_address`       | `hbase.master.ipc.address`       | `0.0.0.0`     |
-| `$HBASE_SITE_hbase_regionserver_ipc_address` | `hbase.regionserver.ipc.address` | `0.0.0.0`     |
-| `$HBASE_SITE_hbase_client_operation_timeout` | `hbase.client.operation.timeout` | `2000`        |
-| `$HBASE_SITE_hbase_rpc_timeout`              | `hbase.rpc.timeout`              | `500`         |
-| `$HBASE_SITE_hbase_client_retries_number`    | `hbase.client.retries.number`    | `2`           |
-| `$HBASE_SITE_zookeeper_session_timeout`      | `zookeeper.session.timeout`      | `1000`        |
-| `$HBASE_SITE_zookeeper_recovery_retry`       | `zookeeper.recovery.retry`       | `2`           |
-| `$HBASE_SITE_hbase_client_pause`             | `hbase.client.pause`             | `100`         |
+| `$HBASE_SITE_HBASE_MASTER_IPC_ADDRESS`       | `hbase.master.ipc.address`       | `0.0.0.0`     |
+| `$HBASE_SITE_HBASE_REGIONSERVER_IPC_ADDRESS` | `hbase.regionserver.ipc.address` | `0.0.0.0`     |
+| `$HBASE_SITE_HBASE_CLIENT_OPERATION_TIMEOUT` | `hbase.client.operation.timeout` | `2000`        |
+| `$HBASE_SITE_HBASE_RPC_TIMEOUT`              | `hbase.rpc.timeout`              | `500`         |
+| `$HBASE_SITE_HBASE_CLIENT_RETRIES_NUMBER`    | `hbase.client.retries.number`    | `2`           |
+| `$HBASE_SITE_ZOOKEEPER_SESSION_TIMEOUT`      | `zookeeper.session.timeout`      | `1000`        |
+| `$HBASE_SITE_ZOOKEEPER_RECOVERY_RETRY`       | `zookeeper.recovery.retry`       | `2`           |
+| `$HBASE_SITE_HBASE_CLIENT_PAUSE`             | `hbase.client.pause`             | `100`         |
 
 #### Non-default ports
 
@@ -152,13 +152,13 @@ $ docker run -d --rm --name hbase2-docker \
     --publish 18020:18020 \
     --publish 18030:18030 \
     --publish 19000:19000 \
-    --env HBASE_SITE_hbase_zookeeper_property_clientPort=18181 \
-    --env HBASE_SITE_hbase_zookeeper_quorum=localhost:18181 \
-    --env HBASE_SITE_hbase_master_port=18000 \
-    --env HBASE_SITE_hbase_master=localhost:18000 \
-    --env HBASE_SITE_hbase_master_info_port=18010 \
-    --env HBASE_SITE_hbase_regionserver_port=18020 \
-    --env HBASE_SITE_hbase_regionserver_info_port=18030 \
+    --env HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT=18181 \
+    --env HBASE_SITE_HBASE_ZOOKEEPER_QUORUM=localhost:18181 \
+    --env HBASE_SITE_HBASE_MASTER_PORT=18000 \
+    --env HBASE_SITE_HBASE_MASTER=localhost:18000 \
+    --env HBASE_SITE_HBASE_MASTER_INFO_PORT=18010 \
+    --env HBASE_SITE_HBASE_REGIONSERVER_PORT=18020 \
+    --env HBASE_SITE_HBASE_REGIONSERVER_INFO_PORT=18030 \
     --env HBASE_HEALTHCHECK_PORT=19000 \
     diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
 ```
@@ -175,13 +175,13 @@ $ docker run -d --rm --name hbase2-docker \
     --publish 18030:16030 \
     --publish 19000:17000 \
     --env HBASE_PORT_MAPPINGS='2181:18181 16000:18000 16010:18010 16020:18020 16030:18030 17000:19000' \
-    --env HBASE_SITE_hbase_zookeeper_property_clientPort=18181 \
-    --env HBASE_SITE_hbase_zookeeper_quorum=localhost:18181 \
-    --env HBASE_SITE_hbase_master_port=18000 \
-    --env HBASE_SITE_hbase_master=localhost:18000 \
-    --env HBASE_SITE_hbase_master_info_port=18010 \
-    --env HBASE_SITE_hbase_regionserver_port=18020 \
-    --env HBASE_SITE_hbase_regionserver_info_port=18030 \
+    --env HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT=18181 \
+    --env HBASE_SITE_HBASE_ZOOKEEPER_QUORUM=localhost:18181 \
+    --env HBASE_SITE_HBASE_MASTER_PORT=18000 \
+    --env HBASE_SITE_HBASE_MASTER=localhost:18000 \
+    --env HBASE_SITE_HBASE_MASTER_INFO_PORT=18010 \
+    --env HBASE_SITE_HBASE_REGIONSERVER_PORT=18020 \
+    --env HBASE_SITE_HBASE_REGIONSERVER_INFO_PORT=18030 \
     --env HBASE_HEALTHCHECK_PORT=19000 \
     diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
 ```
@@ -204,8 +204,8 @@ $ docker run -d --rm --name hbase2-docker \
     --publish 16020:16020 \
     --publish 16030:16030 \
     --publish 17000:17000 \
-    --env HBASE_SITE_hbase_zookeeper_quorum=machine.example.com:2181 \
-    --env HBASE_SITE_hbase_master=machine.example.com:16000 \
+    --env HBASE_SITE_HBASE_ZOOKEEPER_QUORUM=machine.example.com:2181 \
+    --env HBASE_SITE_HBASE_MASTER=machine.example.com:16000 \
     diogenes1oliveira/hbase2-docker:0.2.0-hbase2.0.2
 ```
 

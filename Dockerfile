@@ -8,8 +8,8 @@ ENV HBASE_VERSION="$HBASE_VERSION" \
     HBASE_CONF_DIR=/etc/hbase \
     HBASE_LOG_DIR=/var/log/hbase \
     HBASE_PID_DIR=/var/run/hbase \
-    HBASE_SITE_hbase_zookeeper_property_dataDir=/var/lib/zookeeper \
-    HBASE_SITE_hbase_rootdir=/var/lib/hbase
+    HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_DATA___DIR=/var/lib/zookeeper \
+    HBASE_SITE_HBASE_ROOTDIR=/var/lib/hbase
 
 WORKDIR /tmp
 RUN set -ux && \
@@ -24,8 +24,8 @@ RUN set -ux && \
     # hbase:hadoop user:group and permissions
     addgroup --system hadoop && \
     useradd --system --no-create-home --shell=/bin/false --gid hadoop hbase && \
-    mkdir -p "$HBASE_LOG_DIR" "$HBASE_PID_DIR" "$HBASE_SITE_hbase_rootdir" "$HBASE_SITE_hbase_zookeeper_property_dataDir" && \
-    chown hbase:hadoop -R "$HBASE_LOG_DIR" "$HBASE_PID_DIR" "$HBASE_SITE_hbase_rootdir" "$HBASE_SITE_hbase_zookeeper_property_dataDir"
+    mkdir -p "$HBASE_LOG_DIR" "$HBASE_PID_DIR" "$HBASE_SITE_HBASE_ROOTDIR" "$HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_DATA___DIR" && \
+    chown hbase:hadoop -R "$HBASE_LOG_DIR" "$HBASE_PID_DIR" "$HBASE_SITE_HBASE_ROOTDIR" "$HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_DATA___DIR"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -49,34 +49,33 @@ ENV PATH="$HBASE_HOME/bin:$PATH" \
     HBASE_BACKGROUND_PIDS_FILE=/var/run/hbase2-docker.pids \
     HBASE_SECURITY_LOGGER=INFO,console \
     # core settings
-    HBASE_SITE_hbase_cluster_distributed=false \
-    HBASE_SITE_hbase_unsafe_stream_capability_enforce=false \
+    HBASE_SITE_HBASE_CLUSTER_DISTRIBUTED=false \
+    HBASE_SITE_HBASE_UNSAFE_STREAM_CAPABILITY_ENFORCE=false \
     # master settings
-    HBASE_SITE_hbase_master_ipc_address=0.0.0.0 \
-    HBASE_SITE_hbase_master_hostname=localhost \
-    HBASE_SITE_hbase_master_port=16000 \
-    HBASE_SITE_hbase_master_info_port=16010 \
+    HBASE_SITE_HBASE_MASTER_IPC_ADDRESS=0.0.0.0 \
+    HBASE_SITE_HBASE_MASTER_HOSTNAME=localhost \
+    HBASE_SITE_HBASE_MASTER_PORT=16000 \
+    HBASE_SITE_HBASE_MASTER=localhost:16000 \
+    HBASE_SITE_HBASE_MASTER_INFO_PORT=16010 \
     # region server settings
-    HBASE_SITE_hbase_regionserver_ipc_address=0.0.0.0 \
-    HBASE_SITE_hbase_regionserver_hostname=localhost \
-    HBASE_SITE_hbase_regionserver_port=16020 \
-    HBASE_SITE_hbase_regionserver_info_port=16030 \
+    HBASE_SITE_HBASE_REGIONSERVER_IPC_ADDRESS=0.0.0.0 \
+    HBASE_SITE_HBASE_REGIONSERVER_HOSTNAME=localhost \
+    HBASE_SITE_HBASE_REGIONSERVER_PORT=16020 \
+    HBASE_SITE_HBASE_REGIONSERVER_INFO_PORT=16030 \
     # zookeeper settings
-    HBASE_SITE_hbase_zookeeper_property_clientPort=2181 \
+    HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT=2181 \
+    HBASE_SITE_HBASE_ZOOKEEPER_QUORUM=localhost:2181 \
     # client settings
-    HBASE_SITE_hbase_client_operation_timeout=2000 \
-    HBASE_SITE_hbase_rpc_timeout=500 \
-    HBASE_SITE_hbase_client_retries_number=2 \
-    HBASE_SITE_zookeeper_session_timeout=1000 \
-    HBASE_SITE_zookeeper_recovery_retry=2 \
-    HBASE_SITE_hbase_client_pause=100 \
+    HBASE_SITE_HBASE_CLIENT_OPERATION_TIMEOUT=2000 \
+    HBASE_SITE_HBASE_RPC_TIMEOUT=500 \
+    HBASE_SITE_HBASE_CLIENT_RETRIES_NUMBER=2 \
+    HBASE_SITE_ZOOKEEPER_SESSION_TIMEOUT=1000 \
+    HBASE_SITE_ZOOKEEPER_RECOVERY_RETRY=2 \
+    HBASE_SITE_HBASE_CLIENT_PAUSE=100 \
     # policy settings
-    HBASE_POLICY_security_client_protocol_acl=* \
-    HBASE_POLICY_security_admin_protocol_acl=* \
-    HBASE_POLICY_security_masterregion_protocol_acl=*
-
-ENV HBASE_SITE_hbase_master="$HBASE_SITE_hbase_master_hostname:$HBASE_SITE_hbase_master_port" \
-    HBASE_SITE_hbase_zookeeper_quorum="$HBASE_SITE_hbase_master_hostname:$HBASE_SITE_hbase_zookeeper_property_clientPort"
+    HBASE_POLICY_SECURITY_CLIENT_PROTOCOL_ACL=* \
+    HBASE_POLICY_SECURITY_ADMIN_PROTOCOL_ACL=* \
+    HBASE_POLICY_SECURITY_MASTERREGION_PROTOCOL_ACL=*
 
 COPY ./conf/ "$HBASE_CONF_DIR/"
 COPY ./bin/* /bin/

@@ -45,27 +45,29 @@ import static java.util.Arrays.stream;
 /**
  * Testcontainer for HBase 2
  */
-@SuppressWarnings({"unchecked", "UnusedReturnValue", "CodeBlock2Expr", "Convert2MethodRef"})
+@SuppressWarnings({ "unchecked", "UnusedReturnValue", "CodeBlock2Expr", "Convert2MethodRef" })
 public class HBaseContainer extends GenericContainer<HBaseContainer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(HBaseContainer.class);
 
     public static final String ENV_DOTENV_NAME = "HBASE_ENV_FILE";
     public static final String ENV_DOTENV_VALUE = "/.env";
-    public static final String ENV_PORT_ZOOKEEPER = "HBASE_SITE_hbase_zookeeper_property_clientPort";
-    public static final String ENV_PORT_MASTER = "HBASE_SITE_hbase_master_port";
-    public static final String ENV_HOSTNAME_MASTER = "HBASE_SITE_hbase_master_hostname";
-    public static final String ENV_MASTER = "HBASE_SITE_hbase_master";
-    public static final String ENV_QUORUM = "HBASE_SITE_hbase_zookeeper_quorum";
-    public static final String ENV_HOSTNAME_REGIONSERVER = "HBASE_SITE_hbase_regionserver_hostname";
+    public static final String ENV_PORT_ZOOKEEPER = "HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT";
+    public static final String ENV_PORT_MASTER = "HBASE_SITE_HBASE_MASTER_PORT";
+    public static final String ENV_HOSTNAME_MASTER = "HBASE_SITE_HBASE_MASTER_HOSTNAME";
+    public static final String ENV_MASTER = "HBASE_SITE_HBASE_MASTER";
+    public static final String ENV_QUORUM = "HBASE_SITE_HBASE_ZOOKEEPER_QUORUM";
+    public static final String ENV_HOSTNAME_REGIONSERVER = "HBASE_SITE_HBASE_REGIONSERVER_HOSTNAME";
     public static final String ENV_PORT_MAPPINGS = "HBASE_PORT_MAPPINGS";
 
-    public static final Map<String, Integer> DEFAULT_PORTS = new HashMap<String, Integer>() {{
-        put(ENV_PORT_ZOOKEEPER, 2181);
-        put(ENV_PORT_MASTER, 16000);
-        put("HBASE_SITE_hbase_master_info_port", 16010);
-        put("HBASE_SITE_hbase_regionserver_port", 16020);
-        put("HBASE_SITE_hbase_regionserver_info_port", 16030);
-    }};
+    public static final Map<String, Integer> DEFAULT_PORTS = new HashMap<String, Integer>() {
+        {
+            put(ENV_PORT_ZOOKEEPER, 2181);
+            put(ENV_PORT_MASTER, 16000);
+            put("HBASE_SITE_HBASE_MASTER_INFO_PORT", 16010);
+            put("HBASE_SITE_HBASE_REGIONSERVER_PORT", 16020);
+            put("HBASE_SITE_HBASE_REGIONSERVER_INFO_PORT", 16030);
+        }
+    };
     private final Map<String, String> env = new HashMap<>();
     private final Properties connectionProperties = new Properties();
     private final String hostname;
@@ -75,8 +77,9 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     /**
      * Name of the Docker image to be used
      */
-    @SuppressWarnings({"resource"})
-    public HBaseContainer(String image, Duration timeout, boolean debug, DockerHostnameFunction hostnameFunction, Properties defaultProps) {
+    @SuppressWarnings({ "resource" })
+    public HBaseContainer(String image, Duration timeout, boolean debug, DockerHostnameFunction hostnameFunction,
+            Properties defaultProps) {
         super(image);
 
         env.put(ENV_DOTENV_NAME, ENV_DOTENV_VALUE);
@@ -180,8 +183,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
 
     public void createTable(TableName tableName, byte[] family, byte[]... splits) {
         TableDescriptor descriptor = TableDescriptorBuilder.newBuilder(tableName)
-                                                           .setColumnFamily(ColumnFamilyDescriptorBuilder.of(family))
-                                                           .build();
+                .setColumnFamily(ColumnFamilyDescriptorBuilder.of(family))
+                .build();
         runAsAdmin(TableExistsException.class, admin -> {
             if (splits.length != 0) {
                 admin.createTable(descriptor, splits);
@@ -198,7 +201,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     }
 
     public void truncateTable(TableName tableName) {
-        runAsAdmin(admin -> admin.disableTable(tableName), TableNotEnabledException.class, TableNotFoundException.class);
+        runAsAdmin(admin -> admin.disableTable(tableName), TableNotEnabledException.class,
+                TableNotFoundException.class);
         runAsAdmin(admin -> admin.truncateTable(tableName, true));
         runAsAdmin(admin -> admin.enableTable(tableName));
     }
@@ -208,7 +212,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     }
 
     public void dropTable(TableName tableName) {
-        runAsAdmin(admin -> admin.disableTable(tableName), TableNotEnabledException.class, TableNotFoundException.class);
+        runAsAdmin(admin -> admin.disableTable(tableName), TableNotEnabledException.class,
+                TableNotFoundException.class);
         runAsAdmin(admin -> admin.deleteTable(tableName), TableNotFoundException.class);
     }
 
@@ -223,13 +228,13 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         }
     }
 
-
-    public <T> T get(Class<? extends Exception> ignoredException, T defaultValue, CheckedFunction<Connection, T> function) {
-        return HBaseContainerUtils.getWithRetry(ignoredException, defaultValue, timeoutNs, this::getConnection, (connection, admin) -> {
-            return function.apply(connection);
-        });
+    public <T> T get(Class<? extends Exception> ignoredException, T defaultValue,
+            CheckedFunction<Connection, T> function) {
+        return HBaseContainerUtils.getWithRetry(ignoredException, defaultValue, timeoutNs, this::getConnection,
+                (connection, admin) -> {
+                    return function.apply(connection);
+                });
     }
-
 
     public <T> T get(IOFunction<Connection, T> function) throws IOException {
         try (Connection connection = getConnection()) {
@@ -252,16 +257,20 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         });
     }
 
-    public <T> T getAsAdmin(Class<? extends Exception> ignoredException, T defaultValue, CheckedFunction<Admin, T> function) {
-        return HBaseContainerUtils.getWithRetry(ignoredException, defaultValue, timeoutNs, this::getConnection, (connection, admin) -> {
-            return function.apply(admin);
-        });
+    public <T> T getAsAdmin(Class<? extends Exception> ignoredException, T defaultValue,
+            CheckedFunction<Admin, T> function) {
+        return HBaseContainerUtils.getWithRetry(ignoredException, defaultValue, timeoutNs, this::getConnection,
+                (connection, admin) -> {
+                    return function.apply(admin);
+                });
     }
 
-    public <T> T getAsAdmin(T defaultValue, CheckedFunction<Admin, T> function, Class<? extends Exception>... ignoredExceptions) {
-        return HBaseContainerUtils.getWithRetry(ignoredExceptions, defaultValue, timeoutNs, this::getConnection, (connection, admin) -> {
-            return function.apply(admin);
-        });
+    public <T> T getAsAdmin(T defaultValue, CheckedFunction<Admin, T> function,
+            Class<? extends Exception>... ignoredExceptions) {
+        return HBaseContainerUtils.getWithRetry(ignoredExceptions, defaultValue, timeoutNs, this::getConnection,
+                (connection, admin) -> {
+                    return function.apply(admin);
+                });
     }
 
     public void runAsAdmin(Class<? extends Exception> ignoredException, CheckedConsumer<Admin> consumer) {

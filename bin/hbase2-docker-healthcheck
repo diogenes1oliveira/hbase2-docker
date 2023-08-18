@@ -28,7 +28,7 @@ main() {
         check_zookeeper_port
     fi
 
-    if [ "${HBASE_SITE_hbase_cluster_distributed:-}" = 'false' ]; then
+    if [ "${HBASE_SITE_HBASE_CLUSTER_DISTRIBUTED:-}" = 'false' ]; then
         check_master_port
         check_regionserver_port
     fi
@@ -85,9 +85,9 @@ check_background_pids() {
     if [ -e "${HBASE_BACKGROUND_PIDS_FILE:-}" ]; then
         for pid in $(cat $HBASE_BACKGROUND_PIDS_FILE); do
             if kill -0 "$pid"; then
-                echo "pid($pid): UP"
+                add_output "pid($pid): UP"
             else
-                echo "pid($pid): DOWN"
+                add_output "pid($pid): DOWN"
                 set_down
             fi
         done
@@ -96,28 +96,28 @@ check_background_pids() {
 }
 
 check_zookeeper_port() {
-    if nc -z localhost "${HBASE_SITE_hbase_zookeeper_property_clientPort:-}"; then
-        add_output "zookeeper(${HBASE_SITE_hbase_zookeeper_property_clientPort:-}): UP"
+    if nc -z localhost "${HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT:-}"; then
+        add_output "zookeeper(${HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT:-}): UP"
     else
-        add_output "zookeeper(${HBASE_SITE_hbase_zookeeper_property_clientPort:-}): DOWN"
+        add_output "zookeeper(${HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT:-}): DOWN"
         set_down
     fi
 }
 
 check_master_port() {
-    if nc -z localhost "${HBASE_SITE_hbase_master_port:-}"; then
-        add_output "master(${HBASE_SITE_hbase_master_port:-}): UP"
+    if nc -z localhost "${HBASE_SITE_HBASE_MASTER_PORT:-}"; then
+        add_output "master(${HBASE_SITE_HBASE_MASTER_PORT:-}): UP"
     else
-        add_output "master(${HBASE_SITE_hbase_master_port:-}): DOWN"
+        add_output "master(${HBASE_SITE_HBASE_MASTER_PORT:-}): DOWN"
         set_down
     fi
 }
 
 check_regionserver_port() {
-    if nc -z localhost "${HBASE_SITE_hbase_regionserver_port:-}"; then
-        add_output "regionserver(${HBASE_SITE_hbase_regionserver_port:-}): UP"
+    if nc -z localhost "${HBASE_SITE_HBASE_REGIONSERVER_PORT:-}"; then
+        add_output "regionserver(${HBASE_SITE_HBASE_REGIONSERVER_PORT:-}): UP"
     else
-        add_output "regionserver(${HBASE_SITE_hbase_regionserver_port:-}): DOWN"
+        add_output "regionserver(${HBASE_SITE_HBASE_REGIONSERVER_PORT:-}): DOWN"
         set_down
     fi
 }

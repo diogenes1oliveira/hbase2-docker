@@ -16,11 +16,11 @@ Options:
     FORMAT  '.xml' (default) or '.properties'
 
 This script maps environment variables with the prefix HBASE_CONF_ by removing
-the prefix and replacing underscores by dots or dashes:
+the prefix, transforming to lowercase and replacing underscores by dots or dashes:
 
-<!-- PREFIX_single_underscore_is_dot=value -->
-<!-- PREFIX_double__underscore__is__dash=value -->
-<!-- PREFIX_triple___underscore___is___underscore=value -->
+<!-- PREFIX_SINGLE_UNDERSCORE_IS_DOT=value -->
+<!-- PREFIX_DOUBLE__UNDERSCORE__IS__DASH=value -->
+<!-- PREFIX_TRIPLE___UNDERSCORE____ESCAPES=value -->
 
 .xml:
 
@@ -33,7 +33,7 @@ the prefix and replacing underscores by dots or dashes:
     <value>value</value>
 </property>
 <property>
-    <name>triple_underscore_is_underscore</name>
+    <name>tripleUnderscore_escapes</name>
     <value>value</value>
 </property>
 
@@ -41,7 +41,7 @@ the prefix and replacing underscores by dots or dashes:
 
 single.underscore.is.dot=value
 double-underscore-is-dash=value
-triple_underscore_is_underscore=value
+tripleUnderscore_escapes=value
 
 eof
 }
@@ -52,27 +52,15 @@ FORMAT=.xml
 main() {
     print_header
 
-    for env_name in $( awk 'BEGIN{for(v in ENVIRON) print v}' ); do
-        if prop_name="$(env_to_prop_name "$env_name")"; then
-            print_prop "$prop_name" "${!env_name}"
-        fi
-    done
+    while IFS=$'\n' read -r line; do
+        env_name="${line%%=*}"
+        prop_name="${line#*=}"
+
+        print_prop "$prop_name" "${!env_name}"
+
+    done < <( env_to_prop_names )
 
     print_footer
-}
-
-env_to_prop_name() {
-    local env_name="$1"
-    local prop_name="${env_name#"$PREFIX"}"
-    if [ -z "$prop_name" ] || [ "$prop_name" = "$env_name" ]; then
-        return 1
-    fi
-
-    prop_name="${prop_name//_/.}"
-    prop_name="${prop_name//.../_}"
-    prop_name="${prop_name//../-}"
-
-    printf '%s' "$prop_name"
 }
 
 print_header() {
@@ -115,6 +103,33 @@ print_footer() {
     esac
 }
 
+env_to_prop_names() {
+    awk -v prefix="$PREFIX" '
+        function toprop(name)
+        {
+            gsub("__", "-", name)
+            gsub("_", ".", name)
+            return tolower(name)
+        }
+        BEGIN{
+            for(env_name in ENVIRON) {
+                i = index(env_name, prefix)
+                if(i != 1) continue
+                rest = substr(env_name, length(prefix) + 1)
+
+                split(rest, parts, "___")
+                result = toprop(parts[1])
+
+                for(i = 2; i <= length(parts); i++) {
+                    result = result substr(parts[i], 1, 1) toprop(substr(parts[i], 2))
+                }
+
+                print env_name "=" result
+            }
+        }
+    '
+}
+
 for arg in "$@"; do
     case "$arg" in
     -h | --help )
@@ -124,6 +139,7 @@ done
 
 PREFIX="${1:-}"
 FORMAT="${2:-.xml}"
+ENV_PATTERN="^$PREFIX[A-Z0-9+]+$"
 
 if [ -z "$PREFIX" ]; then
     echo >&2 "ERROR: no environment prefix specified"

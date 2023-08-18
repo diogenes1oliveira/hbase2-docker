@@ -8,30 +8,31 @@ services:
     environment:
       - HBASE_ROLE=master
       - HBASE_MANAGES_ZK=true
-      - HBASE_SITE_hbase_cluster_distributed=false
-      - HBASE_SITE_hbase_zookeeper_property_clientPort=${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
-      - HBASE_SITE_hbase_zookeeper_quorum=${HBASE2__DOCKER_HOSTNAME:-localhost}:${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
-      - HBASE_SITE_hbase_master_port=${HBASE_SITE_hbase_master_port:-16000}
-      - HBASE_SITE_hbase_master_info_port=${HBASE_SITE_hbase_master_info_port:-16010}
-      - HBASE_SITE_hbase_master_hostname=${HBASE_SITE_hbase_master_hostname:-${HBASE2__DOCKER_HOSTNAME:-localhost}}
-      - HBASE_SITE_hbase_master=${HBASE_SITE_hbase_master_hostname:-${HBASE2__DOCKER_HOSTNAME:-localhost}}:${HBASE_SITE_hbase_master_port:-16000}
-      - HBASE_SITE_hbase_regionserver_port=${HBASE_SITE_hbase_regionserver_port:-16020}
-      - HBASE_SITE_hbase_regionserver_info_port=${HBASE_SITE_hbase_regionserver_info_port:-16030}
-      - HBASE_SITE_hbase_regionserver_hostname=${HBASE2__DOCKER_HOSTNAME:-localhost}
+      - HBASE_SITE_HBASE_CLUSTER_DISTRIBUTED=false
+      - HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT=${HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT:-2181}
+      - HBASE_SITE_HBASE_ZOOKEEPER_QUORUM=${HBASE2__DOCKER_HOSTNAME:-localhost}:${HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT:-2181}
+      - HBASE_SITE_HBASE_MASTER_PORT=${HBASE_SITE_HBASE_MASTER_PORT:-16000}
+      - HBASE_SITE_HBASE_MASTER_INFO_PORT=${HBASE_SITE_HBASE_MASTER_INFO_PORT:-16010}
+      - HBASE_SITE_HBASE_MASTER_HOSTNAME=${HBASE_SITE_HBASE_MASTER_HOSTNAME:-${HBASE2__DOCKER_HOSTNAME:-localhost}}
+      - HBASE_SITE_HBASE_MASTER=${HBASE_SITE_HBASE_MASTER_HOSTNAME:-${HBASE2__DOCKER_HOSTNAME:-localhost}}:${HBASE_SITE_HBASE_MASTER_PORT:-16000}
+      - HBASE_SITE_HBASE_REGIONSERVER_PORT=${HBASE_SITE_HBASE_REGIONSERVER_PORT:-16020}
+      - HBASE_SITE_HBASE_REGIONSERVER_INFO_PORT=${HBASE_SITE_HBASE_REGIONSERVER_INFO_PORT:-16030}
+      - HBASE_SITE_HBASE_REGIONSERVER_HOSTNAME=${HBASE2__DOCKER_HOSTNAME:-localhost}
+      - HBASE_HEALTHCHECK_PORT="${HBASE_HEALTHCHECK_PORT:-17000}"
       - >-
         HBASE_PORT_MAPPINGS=
-          2181:${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}
-          16000:${HBASE_SITE_hbase_master_port:-16000}
-          16010:${HBASE_SITE_hbase_master_info_port:-16010}
-          16020:${HBASE_SITE_hbase_regionserver_port:-16020}
-          16030:${HBASE_SITE_hbase_regionserver_info_port:-16030}
+          2181:${HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT:-2181}
+          16000:${HBASE_SITE_HBASE_MASTER_PORT:-16000}
+          16010:${HBASE_SITE_HBASE_MASTER_INFO_PORT:-16010}
+          16020:${HBASE_SITE_HBASE_REGIONSERVER_PORT:-16020}
+          16030:${HBASE_SITE_HBASE_REGIONSERVER_INFO_PORT:-16030}
           17000:${HBASE_HEALTHCHECK_PORT:-17000}
     ports:
-      - ${HBASE_SITE_hbase_zookeeper_property_clientPort:-2181}:2181
-      - ${HBASE_SITE_hbase_master_port:-16000}:16000
-      - ${HBASE_SITE_hbase_master_info_port:-16010}:16010
-      - ${HBASE_SITE_hbase_regionserver_port:-16020}:16020
-      - ${HBASE_SITE_hbase_regionserver_info_port:-16030}:16030
+      - ${HBASE_SITE_HBASE_ZOOKEEPER_PROPERTY_CLIENT___PORT:-2181}:2181
+      - ${HBASE_SITE_HBASE_MASTER_PORT:-16000}:16000
+      - ${HBASE_SITE_HBASE_MASTER_INFO_PORT:-16010}:16010
+      - ${HBASE_SITE_HBASE_REGIONSERVER_PORT:-16020}:16020
+      - ${HBASE_SITE_HBASE_REGIONSERVER_INFO_PORT:-16030}:16030
       - ${HBASE_HEALTHCHECK_PORT:-17000}:17000
     volumes:
       - conf:/etc/hbase/

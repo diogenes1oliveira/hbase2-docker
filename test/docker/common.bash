@@ -5,7 +5,6 @@ bats_require_minimum_version '1.5.0'
 load '../test_helper/bats-support/load'
 load '../test_helper/bats-assert/load'
 
-cd "$BATS_TEST_DIRNAME/../.."
 export BATS_TEST_NAME_PREFIX="$(basename "$BATS_TEST_FILENAME"): "
 
 teardown() (
@@ -25,6 +24,8 @@ setup_file() {
 }
 
 _docker_compose() (
+    cd "$BATS_TEST_DIRNAME/../.."
+
     args=( "$@" )
     eval set -- "$DOCKER_COMPOSE"
     "$@" "${args[@]}"
@@ -37,12 +38,20 @@ _docker() (
 )
 
 _docker_compose_up_and_wait() {
+    local max_tries="$1"
+
+    export DOCKER_COMPOSE="${DOCKER_COMPOSE:-docker compose}"
+    export DOCKER="${DOCKER:-docker}"
+
+    export DOCKER_COMPOSE_NAME="$(_docker_compose config --format json | jq -r '.name')"
+    export DOCKER_CONTAINER_NAME="$DOCKER_COMPOSE_NAME-hbase-1"
+
     _docker_compose up --remove-orphans --renew-anon-volumes --detach
 
     tries=0
 
     while true; do
-        if [ "$tries" -ge "$TEST_MAX_TRIES" ]; then
+        if [ "$tries" -ge "$max_tries" ]; then
             echo >&3 "# ERROR: container still unhealthy after $tries tries"
             _docker inspect --format '{{ json .State.Health }}' "$DOCKER_CONTAINER_NAME" 2>&1 | sed 's/^/# /g' >&3
             return 1
@@ -57,7 +66,7 @@ _docker_compose_up_and_wait() {
             return 0
         fi
 
-        echo >&3 "# WARN: container unhealthy ($tries/$TEST_MAX_TRIES), trying again in 5 seconds"
+        echo >&3 "# WARN: container unhealthy ($tries/$max_tries), trying again in 5 seconds"
         sleep 5
     done
 
@@ -68,11 +77,3 @@ _hbase_shell() {
     echo >&3 "# INFO: hbase shell: $cmd"
     _docker_compose exec -T client hbase shell -n 2>&1 <<<"$cmd" | sed 's/^/# /g' >&3
 }
-
-export DOCKER_COMPOSE="${DOCKER_COMPOSE:-docker compose}"
-export DOCKER="${DOCKER:-docker}"
-
-export DOCKER_COMPOSE_NAME="$(_docker_compose config --format json | jq -r '.name')"
-export DOCKER_CONTAINER_NAME="$DOCKER_COMPOSE_NAME-hbase-1"
-
-export TEST_MAX_TRIES=24
