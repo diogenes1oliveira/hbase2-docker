@@ -1,4 +1,4 @@
-# hbase2-docker
+# [hbase2-docker](https://github.com/diogenes1oliveira/hbase2-docker)
 
 [![Build Status](https://github.com/diogenes1oliveira/hbase2-docker/actions/workflows/main.yml/badge.svg)](https://github.com/diogenes1oliveira/hbase2-docker/actions)
 [![Docker Hub](https://img.shields.io/docker/v/diogenes1oliveira/hbase2-docker)](https://hub.docker.com/r/diogenes1oliveira)
@@ -72,6 +72,7 @@ The configuration is made through environment variables.
 | `$HBASE_BACKGROUND_PIDS_FILE`        | `/var/run/hbase2-docker.pids`                          | file containing the PIDs of supporting background processes                                                                                                                                                                           |
 | `$HBASE_PORT_MAPPINGS`               | -                                                      | set of comma or whitespace-separated mappings `SOURCE_PORT:TARGET_PORT` to map a source port to another. For each mapping, a background process will be started to direct the TCP traffic reaching the source port to the target port |
 | `$HBASE_HEALTHCHECK_PORT`            | `17000`                                                | port to bind the healthcheck server to                                                                                                                                                                                                |
+| `$HBASE_POST_INITIALIZATION_COMMAND` | -                                                      | file or string with hbase shell commands to run after the healthcheck succeeds for the first time                                                                                                                                     |
 
 #### HBase configurations
 
