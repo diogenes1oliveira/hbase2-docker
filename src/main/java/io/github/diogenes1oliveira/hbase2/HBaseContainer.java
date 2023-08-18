@@ -329,7 +329,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
             this.timeout = getProp(props, "hbase2-docker.timeout", Duration::parse);
             this.debug = getProp(props, "hbase2-docker.debug", Boolean::parseBoolean);
             this.reuse = getProp(props, "hbase2-docker.reuse", Boolean::parseBoolean);
-            this.connectionProperties = getProps(props, "hbase2-docker.connection.");
+            this.connectionProperties = getProps(props, "hbase.site.");
 
             String hostname = getProp(props, "hbase2-docker.hostname", false);
             String hostnameMapper = getProp(props, "hbase2-docker.hostname-mapper", false);
