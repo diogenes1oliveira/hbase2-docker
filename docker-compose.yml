@@ -5,7 +5,6 @@ services:
     image: ${IMAGE_REPO:-diogenes1oliveira/hbase2-docker}:${IMAGE_TAG:-latest}
     extra_hosts:
       - ${HBASE2__DOCKER_HOSTNAME:-localhost}:127.0.0.1
-    env_file: "${HBASE_ENV_FILE:-.env}"
     environment:
       - HBASE_COMMAND=master
       - HBASE_MANAGES_ZK=true
