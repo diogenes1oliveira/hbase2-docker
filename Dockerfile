@@ -1,6 +1,6 @@
 FROM openjdk:8-bullseye
 
-ARG HBASE_VERSION=2.0.2
+ARG HBASE_VERSION=2.3.7
 ARG HBASE_URL="https://archive.apache.org/dist/hbase/$HBASE_VERSION/hbase-$HBASE_VERSION-bin.tar.gz"
 
 ENV HBASE_VERSION="$HBASE_VERSION" \

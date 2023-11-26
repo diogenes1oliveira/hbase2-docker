@@ -9,11 +9,12 @@ usage() {
 Generates a hadoop configuration file based on the environment variables
 
 Usage:
-    $SCRIPT PREFIX [ FORMAT ]
+    $SCRIPT PREFIX [ FORMAT ] [ HBASE_PROP_PREFIX ]
 
 Options:
-    PREFIX  only consider variables starting with this value
-    FORMAT  '.xml' (default) or '.properties'
+    PREFIX               only consider variables starting with this value
+    FORMAT               '.xml' (default) or '.properties'
+    \$HBASE_PROP_PREFIX   add prefix to .properties file
 
 This script maps environment variables with the prefix HBASE_CONF_ by removing
 the prefix, transforming to lowercase and replacing underscores by dots or dashes:
@@ -84,7 +85,7 @@ print_prop() {
     case "$FORMAT" in
     .xml)
         echo "<property>"
-        echo "    <name>$prop_name</name>"
+        echo "    <name>$HBASE_PROP_PREFIX$prop_name</name>"
         echo "    <value>$value</value>"
         echo "</property>"
         ;;
@@ -140,6 +141,7 @@ done
 PREFIX="${1:-}"
 FORMAT="${2:-.xml}"
 ENV_PATTERN="^$PREFIX[A-Z0-9+]+$"
+HBASE_PROP_PREFIX="${HBASE_PROP_PREFIX:-}"
 
 if [ -z "$PREFIX" ]; then
     echo >&2 "ERROR: no environment prefix specified"
