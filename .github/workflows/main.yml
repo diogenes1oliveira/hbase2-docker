@@ -74,7 +74,7 @@ jobs:
         uses: actions/setup-java@v3
         if: github.ref == 'refs/heads/main' && env.BUILD_IS_STABLE == 'true'
         with:
-          java-version: 8.0.362+9
+          java-version: "17"
           distribution: adopt
           server-id: ossrh
           server-username: OSSRH_USERNAME
