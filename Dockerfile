@@ -31,10 +31,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        net-tools=1.60+git20181103.0eebece-1 \
-        netcat=1.10-46 \
-        socat=1.7.4.1-3 \
-        wait-for-it=0.0~git20180723-1 && \
+    net-tools \
+    netcat \
+    socat \
+    wait-for-it && \
     rm -rf /var/lib/apt/lists
 
 ENV PATH="$HBASE_HOME/bin:$PATH" \

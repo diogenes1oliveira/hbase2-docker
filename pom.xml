@@ -7,7 +7,7 @@
     <groupId>io.github.diogenes1oliveira</groupId>
     <artifactId>hbase2-testcontainers</artifactId>
     <packaging>jar</packaging>
-    <version>0.2.4</version>
+    <version>0.3.0</version>
     <name>hbase2-testcontainers</name>
     <description>
         Isolated container management for HBase 2 code testing
@@ -51,7 +51,7 @@
     </distributionManagement>
 
     <properties>
-        <java.version>8</java.version>
+        <java.version>17</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -60,21 +60,32 @@
 
         <!-- dependency versions -->
         <testcontainers.version>1.18.3</testcontainers.version>
-        <hbase.version>2.0.2</hbase.version>
-        <slf4j.version>1.7.32</slf4j.version>
+        <hbase.version>2.6.2</hbase.version>
+        <slf4j.version>2.0.17</slf4j.version>
         <!-- test dependencies -->
-        <junit.version>5.8.2</junit.version>
-        <junit-pioneer.version>1.9.1</junit-pioneer.version>
+        <junit.version>5.12.2</junit.version>
+        <junit-pioneer.version>2.3.0</junit-pioneer.version>
         <hamcrest.version>2.2</hamcrest.version>
         <!-- plugin versions -->
-        <surefire-plugin.version>2.22.2</surefire-plugin.version>
-        <failsafe-plugin.version>2.22.2</failsafe-plugin.version>
-        <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <source-plugin.version>3.2.1</source-plugin.version>
-        <javadoc-plugin.version>3.3.1</javadoc-plugin.version>
+        <surefire-plugin.version>3.2.2</surefire-plugin.version>
+        <failsafe-plugin.version>3.2.2</failsafe-plugin.version>
+        <compiler-plugin.version>3.13.0</compiler-plugin.version>
+        <source-plugin.version>3.3.1</source-plugin.version>
+        <javadoc-plugin.version>3.10.1</javadoc-plugin.version>
         <gpg-plugin.version>1.6</gpg-plugin.version>
         <nexus-staging-plugin.version>1.6.7</nexus-staging-plugin.version>
     </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -90,13 +101,11 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -108,7 +117,6 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

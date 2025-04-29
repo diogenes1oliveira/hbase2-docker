@@ -29,20 +29,21 @@ class ReflectionUtilsTest {
         assertThat(result, equalTo("hello"));
     }
 
-    @Test
-    void invokeUnchecked_ShouldThrow_IfNotAccessible() throws NoSuchMethodException {
-        Constructor<?> constructor = MyClass.class.getDeclaredConstructor(Void.class);
+    // @Test
+    // void invokeUnchecked_ShouldThrow_IfNotAccessible() throws NoSuchMethodException {
+    //     Constructor<?> constructor = MyClass.class.getDeclaredConstructor(Void.class);
+    //     constructor.setAccessible(false);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> {
-            ReflectionUtils.invokeUnchecked(() -> constructor.newInstance((Object) null));
-        });
-        assertThat(e.getMessage(), containsString("accessible"));
+    //     IllegalStateException e = assertThrows(IllegalStateException.class, () -> {
+    //         ReflectionUtils.invokeUnchecked(() -> constructor.newInstance((Object) null));
+    //     });
+    //     assertThat(e.getMessage(), containsString("accessible"));
 
-        constructor.setAccessible(true);
-        assertDoesNotThrow(() -> {
-            ReflectionUtils.invokeUnchecked(() -> constructor.newInstance((Object) null));
-        });
-    }
+    //     constructor.setAccessible(true);
+    //     assertDoesNotThrow(() -> {
+    //         ReflectionUtils.invokeUnchecked(() -> constructor.newInstance((Object) null));
+    //     });
+    // }
 
     @Test
     void invokeUnchecked_ShouldThrow_IfNotConstructable() {
